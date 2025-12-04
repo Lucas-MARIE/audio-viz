@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Visualiseur audio — Spectre centré + vidéo + voiture</title>
+<style>
+  :root{
+    --bg:#07060a;
+    --panel:#0f1116;
+    --accent: #7c3aed;
+    --glass: rgba(255,255,255,0.03);
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg), #000 60%);color:#eee;font-family:Inter, system-ui, Arial;}
+  .wrap{
+    max-width:1100px;margin:18px auto;padding:18px;
+  }
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between}
+  h1{font-weight:600;margin:0;font-size:18px}
+  .controls{display:flex;gap:8px;align-items:center}
+  input[type=file]{background:var(--panel);padding:8px;border-radius:8px;color:#ddd}
+  .canvas-container{
+    margin-top:18px;
+    background:var(--panel);
+    border-radius:12px;
+    padding:12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  }
+  canvas{width:100%;height:360px;display:block;border-radius:8px;background:transparent}
+  .hint{opacity:0.7;font-size:13px;margin-top:8px}
+  .small{font-size:13px;opacity:0.85}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  label.fake-btn{
+    background:linear-gradient(90deg,var(--accent),#4c1d95);
+    padding:8px 12px;border-radius:8px;color:white;cursor:pointer;font-weight:600;
+  }
+  .footer{margin-top:14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .settings{display:flex;gap:10px;align-items:center}
+  .slider{width:160px}
+  @media (max-width:640px){
+    canvas{height:260px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Visualiseur audio — Spectre centré + Vidéo + Voiture</h1>
+    <div class="controls row">
+      <label class="fake-btn">Choisir audio <input id="audioFile" type="file" accept="audio/*" style="display:none"></label>
+      <label class="fake-btn">Vidéo fond (optionnel) <input id="videoFile" type="file" accept="video/*" style="display:none"></label>
+      <label class="fake-btn">Image voiture (optionnel) <input id="carFile" type="file" accept="image/*" style="display:none"></label>
+      <button id="playPause" class="fake-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06)">Play</button>
+    </div>
+  </header>
+
+  <div class="canvas-container">
+    <canvas id="canvas"></canvas>
+    <div class="hint small">
+      Astuce : charge un fichier audio. Tu peux aussi charger une vidéo pour le fond (elle sera visible uniquement sous la courbe). Si tu ne fournis pas d'image de voiture, une voiture stylisée sera dessinée.
+    </div>
+
+    <div class="footer">
+      <div class="settings small">
+        <div>FFT size:
+          <select id="fftSelect" class="small">
+            <option value="1024">1024</option>
+            <option value="2048" selected>2048</option>
+            <option value="4096">4096</option>
+          </select>
+        </div>
+        <div>Gain: <input id="gain" type="range" min="0.2" max="4" step="0.05" value="1" class="slider"></div>
+        <div>Sensibilité saut: <input id="jumpThresh" type="range" min="0.01" max="0.6" step="0.01" value="0.18" class="slider"></div>
+      </div>
+      <div class="small">Made for your project — tweak styles & animations as tu veux ✨</div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden video & audio elements used as sources -->
+<video id="bgVideo" style="display:none" muted loop playsinline crossorigin="anonymous"></video>
+<audio id="audioEl" style="display:none" crossorigin="anonymous"></audio>
+
+<script>
+/* ========== Variables et éléments ========== */
+const fileInput = document.getElementById('audioFile');
+const videoInput = document.getElementById('videoFile');
+const carInput = document.getElementById('carFile');
+const playPauseBtn = document.getElementById('playPause');
+const fftSelect = document.getElementById('fftSelect');
+const gainSlider = document.getElementById('gain');
+const jumpThreshSlider = document.getElementById('jumpThresh');
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', {alpha:true});
+let W, H;
+function resize() {
+  const ratio = devicePixelRatio || 1;
+  canvas.width = Math.floor(canvas.clientWidth * ratio);
+  canvas.height = Math.floor(canvas.clientHeight * ratio);
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  W = canvas.clientWidth;
+  H = canvas.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ========== Audio context et nodes ========== */
+let audioCtx = null;
+let sourceNode = null;
+let analyser = null;
+let gainNode = null;
+let dataArray = null;
+let bufferLength = 0;
+let audioBuffer = null;
+const audioEl = document.getElementById('audioEl');
+
+const bgVideo = document.getElementById('bgVideo');
+
+/* Voiture */
+let carImg = null; // Image object if provided
+let carPosX = 0;
+let carPosY = 0;
+let carYVel = 0;
+let carOnGroundY = H * 0.85;
+let carVisualScale = 1.0;
+let lastPeakTime=0;
+
+/* paramètres */
+let fftSize = parseInt(fftSelect.value);
+let globalGain = parseFloat(gainSlider.value);
+let jumpSensitivity = parseFloat(jumpThreshSlider.value);
+
+/* états */
+let isPlaying = false;
+let symmetricData = []; // tableau symétrique à dessiner
+
+/* ========== Helper: créer AudioContext si nécessaire ========== */
+function ensureAudioContext(){
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = globalGain;
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = fftSize;
+    analyser.smoothingTimeConstant = 0.6;
+    gainNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  }
+}
+
+/* ========== Charger audio via file input ========== */
+fileInput.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  // stop previous source if exist
+  stopAudio();
+  ensureAudioContext();
+
+  // Use <audio> element for playback (to easily control progress) + decode for analysis
+  const url = URL.createObjectURL(file);
+  audioEl.src = url;
+  await audioEl.load();
+
+  // decode to AudioBuffer for BufferSource playback (but we'll use MediaElementSource for sync simplicity)
+  // Create MediaElementSource to keep audioContext time and element in sync
+  if (sourceNode) sourceNode.disconnect();
+  sourceNode = audioCtx.createMediaElementSource(audioEl);
+  sourceNode.connect(gainNode);
+
+  // setup analyser arrays
+  analyser.fftSize = fftSize;
+  bufferLength = analyser.frequencyBinCount;
+  dataArray = new Uint8Array(bufferLength);
+
+  playAudio();
+});
+
+/* ========== Video background file ========== */
+videoInput.addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  bgVideo.src = url;
+  bgVideo.loop = true;
+  bgVideo.muted = true;
+  bgVideo.playsInline = true;
+  bgVideo.play().catch(()=>{/* autoplay blocked - will play when user starts audio */});
+});
+
+/* ========== Car image ========== */
+carInput.addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = ()=>{ carImg = img; };
+  img.src = URL.createObjectURL(file);
+});
+
+/* ========== Play / Pause controls ========== */
+playPauseBtn.addEventListener('click', async ()=>{
+  if (!audioEl.src) return alert('Charge d\'abord un fichier audio.');
+  if (!audioCtx) ensureAudioContext();
+
+  if (!isPlaying) {
+    await playAudio();
+  } else {
+    pauseAudio();
+  }
+});
+
+async function playAudio(){
+  if (!audioCtx) ensureAudioContext();
+  // Resume audio context if necessary (user gesture)
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  await audioEl.play().catch(()=>{/* play blocked */});
+  if (bgVideo.src && bgVideo.paused) { try { await bgVideo.play(); } catch(e){} }
+  isPlaying = true;
+  playPauseBtn.textContent = 'Pause';
+  lastDrawTs = performance.now();
+  requestAnimationFrame(draw);
+}
+
+function pauseAudio(){
+  audioEl.pause();
+  if (!bgVideo.paused) bgVideo.pause();
+  isPlaying = false;
+  playPauseBtn.textContent = 'Play';
+}
+
+/* ========== Stop audio & cleanup ========== */
+function stopAudio(){
+  pauseAudio();
+  if (sourceNode) {
+    try { sourceNode.disconnect(); } catch(e){}
+    sourceNode = null;
+  }
+  if (audioEl) {
+    audioEl.pause();
+    audioEl.currentTime = 0;
+  }
+}
+
+/* ========== Paramètres UI listeners ========== */
+fftSelect.addEventListener('change', ()=>{
+  fftSize = parseInt(fftSelect.value);
+  if (analyser) {
+    analyser.fftSize = fftSize;
+    bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+  }
+});
+
+gainSlider.addEventListener('input', ()=>{
+  globalGain = parseFloat(gainSlider.value);
+  if (gainNode) gainNode.gain.value = globalGain;
+});
+
+jumpThreshSlider.addEventListener('input', ()=>{
+  jumpSensitivity = parseFloat(jumpThreshSlider.value);
+});
+
+/* ========== Dessin principal ========== */
+
+let lastDrawTs = 0;
+function getSymmetricData(raw) {
+  // raw: Uint8Array of length N, values 0..255
+  // We'll take first half (low->mid) and mirror to center.
+  const N = raw.length;
+  const half = Math.floor(N/2);
+  const left = new Float32Array(half);
+  for (let i=0;i<half;i++) left[i] = raw[i]/255; // normalized 0..1
+  // Smooth transition using simple moving average on left to avoid jaggedness
+  for (let i=1;i<half-1;i++) left[i] = (left[i-1]*0.15 + left[i]*0.7 + left[i+1]*0.15);
+  // create symmetric array: left reversed (for center->left) + left (center->right)
+  const symmetric = new Float32Array(half*2);
+  for (let i=0;i<half;i++){
+    symmetric[i] = left[half - 1 - i];
+    symmetric[half + i] = left[i];
+  }
+  return symmetric;
+}
+
+function draw(timestamp){
+  if (!isPlaying) return;
+  if (!analyser || !dataArray) {
+    requestAnimationFrame(draw);
+    return;
+  }
+
+  // Read frequency data
+  analyser.getByteFrequencyData(dataArray);
+  symmetricData = getSymmetricData(dataArray);
+
+  // Clear with slight fade to create trailing effect
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+
+  // --- 1) Draw video background clipped under the curve ---
+  // Create path of the curve to use as clip region
+  ctx.beginPath();
+  const len = symmetricData.length;
+  const marginTop = 24;
+  const bottom = H * 0.92;
+  const centerY = H * 0.5;
+  // compute x scale
+  const step = W / (len - 1);
+  ctx.moveTo(0, bottom);
+  for (let i=0;i<len;i++){
+    const x = i * step;
+    // map amplitude to a y position — amplify for nicer look
+    const amp = symmetricData[i];
+    const curve = Math.pow(amp, 0.8); // non linear mapping
+    const y = bottom - (curve * (H*0.7)) - marginTop;
+    // Use a simple smoothing by quadratic curve between points
+    if (i===0) ctx.lineTo(x,y);
+    else {
+      // quadratic curve from previous point to current
+      const prevX = (i-1)*step;
+      const prevAmp = symmetricData[i-1];
+      const prevCurve = Math.pow(prevAmp,0.8);
+      const prevY = bottom - (prevCurve * (H*0.7)) - marginTop;
+      const cx = (prevX + x)/2;
+      const cy = (prevY + y)/2;
+      ctx.quadraticCurveTo(prevX, prevY, cx, cy);
+    }
+  }
+  ctx.lineTo(W, bottom);
+  ctx.closePath();
+
+  // Clip and draw video inside clip
+  ctx.save();
+  ctx.clip();
+  if (bgVideo && bgVideo.readyState >= 2 && !bgVideo.paused) {
+    // Draw tiled/mode video to cover area
+    // scale video to cover width
+    const vW = bgVideo.videoWidth || W;
+    const vH = bgVideo.videoHeight || H;
+    // compute scale to cover
+    const scale = Math.max(W / vW, H / vH);
+    const vw = vW * scale;
+    const vh = vH * scale;
+    // center video
+    const dx = (W - vw) / 2;
+    const dy = (H - vh) / 2;
+    ctx.globalAlpha = 0.95;
+    // draw the video to canvas (it will be clipped)
+    ctx.drawImage(bgVideo, dx, dy, vw, vh);
+  } else {
+    // fallback animated gradient if no video
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, "rgba(124,58,237,0.18)");
+    g.addColorStop(0.5, "rgba(14,165,233,0.12)");
+    g.addColorStop(1, "rgba(15,23,42,0.08)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+  }
+  ctx.restore();
+
+  // --- 2) Draw the filled area under curve with subtle glow ---
+  // Outer glow
+  ctx.save();
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = "rgba(124,58,237,0.6)";
+  ctx.fillStyle = "rgba(124,58,237,0.12)";
+  ctx.fill();
+  ctx.restore();
+
+  // Draw curve stroke
+  ctx.beginPath();
+  for (let i=0;i<len;i++){
+    const x = i * step;
+    const amp = symmetricData[i];
+    const curve = Math.pow(amp, 0.85);
+    const y = bottom - (curve * (H*0.7)) - marginTop;
+    if (i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  }
+  ctx.lineWidth = 2.5;
+  // gradient stroke centered color emphasis
+  const strokeGrad = ctx.createLinearGradient(0,0,W,0);
+  strokeGrad.addColorStop(0, "rgba(120, 40, 240, 0.9)");
+  strokeGrad.addColorStop(0.5, "rgba(255,215,0,1)"); // center highlight
+  strokeGrad.addColorStop(1, "rgba(120, 40, 240, 0.9)");
+  ctx.strokeStyle = strokeGrad;
+  ctx.stroke();
+
+  // subtle top glow line
+  ctx.beginPath();
+  for (let i=0;i<len;i++){
+    const x = i * step;
+    const amp = symmetricData[i];
+    const curve = Math.pow(amp, 0.6);
+    const y = bottom - (curve * (H*0.7)) - marginTop;
+    if (i===0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  }
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.stroke();
+
+  ctx.restore();
+
+  // --- 3) Draw ticks or frequency markers (optional) ---
+  // center marker
+  ctx.beginPath();
+  ctx.moveTo(W/2, bottom+6);
+  ctx.lineTo(W/2, bottom+24);
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = "rgba(255,255,255,0.06)";
+  ctx.stroke();
+
+  // --- 4) Place & animate car on the curve ---
+  // car progress is audio time / duration
+  const duration = audioEl.duration || 1;
+  const currentTime = audioEl.currentTime || 0;
+  const progress = Math.max(0, Math.min(1, currentTime / duration));
+  carPosX = progress * W;
+
+  // get amplitude at corresponding index
+  const idx = Math.floor(progress * (len-1));
+  const ampAtIdx = symmetricData[idx] || 0;
+
+  // compute ground Y from curve height at position
+  const ampCurve = Math.pow(ampAtIdx, 0.85);
+  const targetY = bottom - (ampCurve * (H*0.7)) - marginTop;
+
+  // carOnGroundY target slightly above bottom so car sits ON curve top
+  const carGround = targetY - 12;
+  // Jump detection: if amplitude suddenly high relative to typical -> impulse
+  const now = performance.now();
+  if (ampAtIdx > jumpSensitivity && (now - lastPeakTime) > 180) {
+    // create an upward velocity proportional to amplitude
+    carYVel = -6 - (ampAtIdx * 12);
+    lastPeakTime = now;
+  }
+
+  // gravity simulation
+  carYVel += 0.35; // gravity
+  carPosY += carYVel;
+  // when car below ground, place it on ground and damp velocity
+  if (carPosY > carGround) {
+    carPosY = carGround;
+    carYVel *= -0.12;
+    if (Math.abs(carYVel) < 0.5) carYVel = 0;
+  } else {
+    // in the air — minor rotation maybe
+  }
+
+  // Initialize carPosY if first frame
+  if (!carPosY || carPosY === 0) carPosY = carGround;
+
+  // draw shadow
+  const shadowW = 60 * carVisualScale;
+  const shadowH = 12 * carVisualScale;
+  ctx.beginPath();
+  ctx.ellipse(carPosX, carGround + 22, shadowW, shadowH, 0, 0, Math.PI*2);
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fill();
+
+  // draw car (use provided image if available, else draw stylized car)
+  if (carImg) {
+    // adapt size based on canvas
+    const cw = 120 * carVisualScale;
+    const ch = (carImg.height / carImg.width) * cw;
+    ctx.save();
+    // small tilt based on vertical speed
+    const tilt = Math.max(-0.25, Math.min(0.25, carYVel * 0.03));
+    ctx.translate(carPosX, carPosY - ch/2);
+    ctx.rotate(tilt);
+    ctx.drawImage(carImg, -cw/2, -ch/2, cw, ch);
+    ctx.restore();
+  } else {
+    // simple drawn car (cartoon)
+    ctx.save();
+    ctx.translate(carPosX, carPosY);
+    const scale = Math.max(0.6, Math.min(1.2, W / 900));
+    ctx.scale(scale, scale);
+    // body
+    ctx.beginPath();
+    ctx.roundRect(-48, -18, 96, 36, 8);
+    ctx.fillStyle = "linear-gradient(0deg,#ffdd57,#ff6b6b)";
+    // since canvas doesn't support CSS gradients via string names, create one:
+    const lg = ctx.createLinearGradient(-48, -18, 48, 18);
+    lg.addColorStop(0, "#ffdd57");
+    lg.addColorStop(1, "#ff6b6b");
+    ctx.fillStyle = lg;
+    ctx.fill();
+    // cabin
+    ctx.beginPath();
+    ctx.roundRect(-8, -28, 36, 20, 6);
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.fill();
+    // wheels
+    ctx.beginPath();
+    ctx.fillStyle = "#111";
+    ctx.arc(-28, 22, 10,0,Math.PI*2);
+    ctx.arc(28, 22, 10,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // small HUD: time
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  ctx.fillRect(8,8,180,36);
+  ctx.fillStyle = "#fff";
+  ctx.font = "12px system-ui, Arial";
+  ctx.fillText(`${formatTime(currentTime)} / ${formatTime(duration)}`, 18, 30);
+
+  // request next frame
+  requestAnimationFrame(draw);
+}
+
+/* utility for time format */
+function formatTime(sec){
+  if (!isFinite(sec)) return "0:00";
+  const s = Math.floor(sec%60).toString().padStart(2,'0');
+  const m = Math.floor(sec/60).toString();
+  return `${m}:${s}`;
+}
+
+/* Polyfill for roundRect for older browsers */
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){
+    if (typeof r === 'number') r = {tl: r, tr: r, br: r, bl: r};
+    else r = Object.assign({tl:0,tr:0,br:0,bl:0}, r);
+    this.beginPath();
+    this.moveTo(x + r.tl, y);
+    this.lineTo(x + w - r.tr, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+    this.lineTo(x + w, y + h - r.br);
+    this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+    this.lineTo(x + r.bl, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+    this.lineTo(x, y + r.tl);
+    this.quadraticCurveTo(x, y, x + r.tl, y);
+    this.closePath();
+  };
+}
+
+/* start a tiny render loop even if no audio yet to show idle background */
+(function idleLoop(){
+  // Draw faint background pattern while idle
+  ctx.clearRect(0,0,W,H);
+  // faint grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.lineWidth = 1;
+  const step = 40;
+  for (let x=0;x<W;x+=step){
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,H);
+    ctx.stroke();
+  }
+  for (let y=0;y<H;y+=step){
+    ctx.beginPath();
+    ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+  // continue only if not playing
+  if (!isPlaying) requestAnimationFrame(idleLoop);
+})();
+
+</script>
+</body>
+</html>
