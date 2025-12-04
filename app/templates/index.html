@@ -1,12 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title> {{ metadata.title }} </title>
-    </head>
-    <body>
-        <p> CA MARCHEEEEEE </p>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Visualiseur audio — Spectre centré + vidéo + voiture</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Visualiseur audio — Spectre centré + Vidéo + Voiture</h1>
+      <div class="controls row">
+        <label class="fake-btn">
+          Choisir audio 
+          <input id="audioFile" type="file" accept="audio/*" style="display:none">
+        </label>
+        <label class="fake-btn">
+          Vidéo fond (optionnel) 
+          <input id="videoFile" type="file" accept="video/*" style="display:none">
+        </label>
+        <label class="fake-btn">
+          Image voiture (optionnel) 
+          <input id="carFile" type="file" accept="image/*" style="display:none">
+        </label>
+        <button id="playPause" class="fake-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.06)">
+          Play
+        </button>
+      </div>
+    </header>
 
-    </body>
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+      <div class="hint small">
+        Astuce : charge un fichier audio. Tu peux aussi charger une vidéo pour le fond (elle sera visible uniquement sous la courbe). 
+        Si tu ne fournis pas d'image de voiture, une voiture stylisée sera dessinée.
+      </div>
+
+      <div class="footer">
+        <div class="settings small">
+          <div>
+            FFT size:
+            <select id="fftSelect" class="small">
+              <option value="1024">1024</option>
+              <option value="2048" selected>2048</option>
+              <option value="4096">4096</option>
+            </select>
+          </div>
+          <div>
+            Gain: 
+            <input id="gain" type="range" min="0.2" max="4" step="0.05" value="1" class="slider">
+          </div>
+          <div>
+            Sensibilité saut: 
+            <input id="jumpThresh" type="range" min="0.01" max="0.6" step="0.01" value="0.18" class="slider">
+          </div>
+        </div>
+        <div class="small">Made for your project — tweak styles & animations as tu veux ✨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden video & audio elements used as sources -->
+  <video id="bgVideo" style="display:none" muted loop playsinline crossorigin="anonymous"></video>
+  <audio id="audioEl" style="display:none" crossorigin="anonymous"></audio>
+
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
 </html>
