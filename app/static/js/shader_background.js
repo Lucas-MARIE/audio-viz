@@ -1052,7 +1052,12 @@ export class ShaderBackground {
   }
 
   loadRandomShaders() {
-    // Choisir deux shaders aléatoires différents
+    // TEMPORAIRE : Forcer le shader 21 (Stereo Mirror Explosion) pour test
+    // Décommentez les 2 lignes ci-dessous pour forcer le shader 21
+    // this.currentShaderIndex1 = 20; // Index 20 = Shader 21
+    // this.currentShaderIndex2 = 19; // Un autre shader pour la couche floutée
+    
+    // Version normale : Choisir deux shaders aléatoires différents
     const index1 = Math.floor(Math.random() * this.shaders.length);
     let index2 = Math.floor(Math.random() * this.shaders.length);
     while (index2 === index1) {
@@ -1065,7 +1070,7 @@ export class ShaderBackground {
     this.loadShaderPair();
     
     this.isInitialized = true;
-    console.log('Shader background initialized successfully');
+    console.log(`Shaders chargés: #${this.currentShaderIndex1 + 1} (${this.shaders[this.currentShaderIndex1].name}) + #${this.currentShaderIndex2 + 1} (${this.shaders[this.currentShaderIndex2].name})`);
   }
 
   resizeCanvas() {
@@ -1376,6 +1381,16 @@ export class ShaderBackground {
   previousShader() {
     // Changer les deux shaders pour de nouveaux aléatoires
     this.loadRandomShaders();
+  }
+
+  // Nouvelle méthode : Forcer un shader spécifique
+  setShader(index) {
+    if (index < 0 || index >= this.shaders.length) {
+      console.warn(`Shader index ${index} invalide. Disponibles: 0-${this.shaders.length - 1}`);
+      return;
+    }
+    this.loadShader(index);
+    console.log(`Shader forcé: #${index + 1} (${this.shaders[index].name})`);
   }
 
   toggle() {

@@ -86,6 +86,11 @@ class AudioVisualizerApp {
       } else if (e.code === 'KeyB') {
         await this.ensureShaderInitialized();
         this.shaderBg.toggle();
+      } else if (e.code === 'Digit2' && e.shiftKey) {
+        // Shift + 2 = Forcer le shader 21 (Stereo Mirror Explosion)
+        await this.ensureShaderInitialized();
+        this.shaderBg.setShader(20); // Index 20 = Shader 21
+        console.log('🎨 Shader 21 (Stereo Mirror Explosion) activé !');
       }
     });
   }

@@ -10,81 +10,81 @@ class VisualizerMapper:
     def __init__(self):
         """Initialise les mappings entre types de sections et visualiseurs."""
         
-        # Configuration pour les shaders (indices des 20 shaders)
+        # Configuration pour les shaders (indices des 21 shaders)
         self.shader_mappings = {
             'intro': {
                 'type': 'shader',
-                'shaders': [0, 1, 2, 19],  # Shaders calmes/ambients
+                'shaders': [0, 1, 2, 19, 20],  # Shaders calmes/ambients + Stereo Mirror
                 'intensity': 'low',
                 'blur_amount': 4.0,
                 'opacity': 0.4
             },
             'verse': {
                 'type': 'shader',
-                'shaders': [3, 4, 5, 6, 7],  # Shaders rythmiques modérés
+                'shaders': [3, 4, 5, 6, 7, 20],  # Shaders rythmiques modérés + Stereo Mirror
                 'intensity': 'medium',
                 'blur_amount': 3.0,
                 'opacity': 0.5
             },
             'chorus': {
                 'type': 'shader',
-                'shaders': [10, 11, 12, 15, 18],  # Shaders énergiques
+                'shaders': [10, 11, 12, 15, 18, 20],  # Shaders énergiques + Stereo Mirror
                 'intensity': 'high',
                 'blur_amount': 2.0,
                 'opacity': 0.7
             },
             'drop': {
                 'type': 'shader',
-                'shaders': [13, 14, 15, 16, 17],  # Shaders intenses/explosifs
+                'shaders': [13, 14, 15, 16, 17, 20],  # Shaders intenses/explosifs + Stereo Mirror
                 'intensity': 'extreme',
                 'blur_amount': 1.5,
                 'opacity': 0.8
             },
             'buildup': {
                 'type': 'shader',
-                'shaders': [8, 9, 10],  # Shaders progressifs
+                'shaders': [8, 9, 10, 20],  # Shaders progressifs + Stereo Mirror
                 'intensity': 'medium-high',
                 'blur_amount': 2.5,
                 'opacity': 0.6
             },
             'pre_drop': {
                 'type': 'shader',
-                'shaders': [8, 9, 10],  # Montée en tension
+                'shaders': [8, 9, 10, 20],  # Montée en tension + Stereo Mirror
                 'intensity': 'high',
                 'blur_amount': 2.0,
                 'opacity': 0.7
             },
             'bridge': {
                 'type': 'shader',
-                'shaders': [4, 5, 6, 7],  # Variation harmonique
+                'shaders': [4, 5, 6, 7, 20],  # Variation harmonique + Stereo Mirror
                 'intensity': 'medium',
                 'blur_amount': 3.5,
                 'opacity': 0.5
             },
             'breakdown': {
                 'type': 'shader',
-                'shaders': [1, 2, 3, 19],  # Retour au calme
+                'shaders': [1, 2, 3, 19, 20],  # Retour au calme + Stereo Mirror
                 'intensity': 'low-medium',
                 'blur_amount': 4.0,
                 'opacity': 0.4
             },
             'outro': {
                 'type': 'shader',
-                'shaders': [0, 1, 19],  # Fin en douceur
+                'shaders': [0, 1, 19, 20],  # Fin en douceur + Stereo Mirror
                 'intensity': 'low',
                 'blur_amount': 5.0,
                 'opacity': 0.3
             },
             'final_chorus': {
                 'type': 'shader',
-                'shaders': [10, 15, 18],  # Finale épique
+                'shaders': [10, 15, 18, 20],  # Finale épique + Stereo Mirror
                 'intensity': 'extreme',
                 'blur_amount': 1.5,
                 'opacity': 0.8
             },
             'interlude': {
                 'type': 'shader',
-                'shaders': [2, 3, 4, 5],  # Transition
+                'shaders': [2, 3, 4, 5, 20],  # Transition + Stereo Mirror
                 'intensity': 'medium',
                 'blur_amount': 3.0,
                 'opacity': 0.5
@@ -94,7 +94,7 @@ class VisualizerMapper:
         # Fallback par défaut
         self.default_config = {
             'type': 'shader',
-            'shaders': [5, 6, 7],
+            'shaders': [5, 6, 7, 20],
             'intensity': 'medium',
             'blur_amount': 3.0,
             'opacity': 0.5
@@ -181,9 +181,9 @@ class VisualizerMapper:
         else:
             # Si pas assez de shaders, utiliser le même avec un autre aléatoire
             shader1 = shader_list[0]
-            shader2 = random.randint(0, 19)
+            shader2 = random.randint(0, 20)  # Maintenant 21 shaders (0-20)
             while shader2 == shader1:
-                shader2 = random.randint(0, 19)
+                shader2 = random.randint(0, 20)
             return {'sharp': shader1, 'blurred': shader2}
     
     def _is_transition_point(self, section, all_sections, index):
@@ -216,13 +216,13 @@ class VisualizerMapper:
         """
         if energy > 0.12:
             # Très énergique
-            return random.choice([13, 14, 15, 16, 17, 18])
+            return random.choice([13, 14, 15, 16, 17, 18, 20])
         elif energy > 0.08:
             # Énergique
-            return random.choice([10, 11, 12, 15])
+            return random.choice([10, 11, 12, 15, 20])
         elif energy > 0.05:
             # Modéré
-            return random.choice([3, 4, 5, 6, 7, 8])
+            return random.choice([3, 4, 5, 6, 7, 8, 20])
         else:
             # Calme
-            return random.choice([0, 1, 2, 19])
+            return random.choice([0, 1, 2, 19, 20])
