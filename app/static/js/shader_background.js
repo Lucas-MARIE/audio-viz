@@ -860,39 +860,39 @@ export class ShaderBackground {
           }
           
           vec3 getNeonColor(float index, float intensity) {
-            // Palette néon comme dans le code original
-            float hues[6];
-            hues[0] = 320.0; hues[1] = 270.0; hues[2] = 220.0;
-            hues[3] = 180.0; hues[4] = 120.0; hues[5] = 60.0;
+            // Palette néon bleutée flashy
+            float t = fract(index + intensity * 0.3);
             
-            int paletteIndex = int(mod(index * 6.0, 6.0));
-            float hue = hues[paletteIndex] + intensity * 40.0;
-            float lightness = 0.5 + intensity * 0.3;
+            vec3 color1 = vec3(0.0, 0.5, 1.0);    // Bleu électrique
+            vec3 color2 = vec3(0.0, 0.8, 1.0);    // Cyan flashy
+            vec3 color3 = vec3(0.3, 0.0, 1.0);    // Violet électrique
+            vec3 color4 = vec3(0.5, 0.0, 1.0);    // Magenta-bleu
+            vec3 color5 = vec3(0.0, 1.0, 0.9);    // Turquoise néon
             
-            // HSL to RGB
-            float c = (1.0 - abs(2.0 * lightness - 1.0));
-            float h = hue / 60.0;
-            float x = c * (1.0 - abs(mod(h, 2.0) - 1.0));
+            vec3 result;
+            if (t < 0.2) {
+              result = mix(color1, color2, t * 5.0);
+            } else if (t < 0.4) {
+              result = mix(color2, color3, (t - 0.2) * 5.0);
+            } else if (t < 0.6) {
+              result = mix(color3, color4, (t - 0.4) * 5.0);
+            } else if (t < 0.8) {
+              result = mix(color4, color5, (t - 0.6) * 5.0);
+            } else {
+              result = mix(color5, color1, (t - 0.8) * 5.0);
+            }
             
-            vec3 rgb;
-            if (h < 1.0) rgb = vec3(c, x, 0.0);
-            else if (h < 2.0) rgb = vec3(x, c, 0.0);
-            else if (h < 3.0) rgb = vec3(0.0, c, x);
-            else if (h < 4.0) rgb = vec3(0.0, x, c);
-            else if (h < 5.0) rgb = vec3(x, 0.0, c);
-            else rgb = vec3(c, 0.0, x);
-            
-            float m = lightness - c * 0.5;
-            return rgb + m;
+            // Boost d'intensité pour plus de flashiness
+            return result * (1.2 + intensity * 1.5);
           }
           
           float drawStereoSide(vec2 p, float side, float mirror) {
             // side: -1.0 pour gauche, 1.0 pour droite
             // mirror: 1.0 pour haut, -1.0 pour bas
             
-            float baseRadius = 0.05;
+            float baseRadius = 0.01; // Réduit pour commencer près du centre
             vec2 center = vec2(0.0);
-            float maxDist = length(vec2(1.0, 1.0));
+            float maxDist = length(vec2(2.5, 2.5)); // Augmenté pour aller plus loin
             
             float result = 0.0;
             
@@ -935,8 +935,8 @@ export class ShaderBackground {
               // Distance du pixel au rayon
               float pixelDist = length(p - point);
               
-              // Contribution de ce point (ligne)
-              float contribution = exp(-pixelDist * 80.0) * audioValue;
+              // Contribution de ce point (ligne) - rayon plus large pour visibilité
+              float contribution = exp(-pixelDist * 40.0) * audioValue; // Réduit de 80 à 40 pour lignes plus épaisses
               
               // Couleur néon
               vec3 neonColor = getNeonColor(t, audioValue);
@@ -952,8 +952,8 @@ export class ShaderBackground {
             vec2 p = (uv - 0.5) * 2.0;
             p.x *= resolution.x / resolution.y;
             
-            // Effet de trainée (comme l'original avec ctx.fillStyle rgba)
-            vec3 trail = vec3(0.02, 0.02, 0.06);
+            // Effet de trainée bleutée sombre
+            vec3 trail = vec3(0.0, 0.03, 0.08);
             
             // Dessiner les 4 quadrants (stéréo + miroir)
             float left_top = drawStereoSide(p, -1.0, 1.0);
@@ -967,7 +967,9 @@ export class ShaderBackground {
             float t = length(p);
             vec3 neonColor = getNeonColor(t + time * 0.2, total);
             
-            vec3 color = trail + neonColor * total * (1.0 + audioLevel * 2.0);
+            // Accentuer les bleus et augmenter la vivacité globale
+            vec3 color = trail + neonColor * total * (1.5 + audioLevel * 3.0);
+            color.b *= 1.3; // Boost du canal bleu
             
             // Bloom effect (comme le blur dans l'original)
             color = pow(color, vec3(0.8));
