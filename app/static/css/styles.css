@@ -168,6 +168,57 @@ body.bg-hidden::before {
   border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* Section info (debug) */
+.floating-section-info {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  z-index: 500;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  opacity: 0.6;
+  transition: opacity 0.3s;
+}
+
+.floating-section-info:hover {
+  opacity: 1;
+}
+
+.floating-section-info span {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Analysis progress */
+.analysis-progress {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 500;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: rgba(255,255,255,0.8);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  display: none;
+  opacity: 0.8;
+}
+
 .wrap{
   max-width: 100%;
   margin: 0;

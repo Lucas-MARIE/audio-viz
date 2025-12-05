@@ -43,6 +43,8 @@ export class AudioManager {
     this.analyser.fftSize = this.fftSize;
     this.bufferLength = this.analyser.frequencyBinCount;
     this.dataArray = new Uint8Array(this.bufferLength);
+    
+    return true; // Important pour que l'override fonctionne
   }
 
   async playAudio() {
