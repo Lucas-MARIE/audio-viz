@@ -1,0 +1,108 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+
+body {
+  font-family: Arial, sans-serif;
+  background: #000;
+  color: white;
+  overflow: hidden;
+}
+
+#container {
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #1a1a3e 0%, #0a0a1e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+left: 0;
+}
+
+
+
+#visualizer {
+  width: 100vw;
+  height: 100vh;
+  cursor: pointer;
+  display: block;
+  filter: blur(70px) contrast(1.2) brightness(2000%);
+}
+
+#popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(50, 50, 70, 0.95);
+  padding: 40px;
+  border-radius: 15px;
+  text-align: center;
+  z-index: 100;
+}
+
+#popup.hidden {
+  display: none;
+}
+
+#popup h2 {
+  margin-bottom: 20px;
+}
+
+#fileInput {
+  padding: 10px;
+  cursor: pointer;
+  color: white; /* Petit fix pour que le texte soit lisible */
+}
+
+#controls {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  background: rgba(50, 50, 70, 0.9);
+  padding: 15px 30px;
+  border-radius: 50px;
+  z-index: 50;
+}
+
+
+
+#controls.hidden {
+  display: none;
+}
+
+
+
+#controls button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+
+
+#controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+
+
+#time {
+  min-width: 100px;
+  text-align: center;
+}

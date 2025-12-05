@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Audio Visualizer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div id="container">
+    <canvas id="visualizer"></canvas>
+  </div>
+
+  <div id="popup">
+    <h2>📁 Importer un fichier audio</h2>
+    <input type="file" id="fileInput" accept="audio/*" />
+  </div>
+
+  <div id="controls" class="hidden">
+    <button id="playBtn">▶</button>
+    <span id="time">0:00 / 0:00</span>
+    <button id="newBtn">📁</button>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
