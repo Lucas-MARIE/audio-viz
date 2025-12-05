@@ -33,7 +33,7 @@ git push origin main
    - **Environment** : `Python 3`
    - **Build Command** : 
      ```
-     pip install --upgrade pip && pip install -r requirements.txt
+     bash build.sh
      ```
    - **Start Command** :
      ```
@@ -109,8 +109,23 @@ git push origin main
 
 ## 🐛 Dépannage déploiement
 
-### Build échoue avec "Error installing librosa"
-→ C'est normal, librosa prend du temps. Attendez jusqu'à la fin.
+### ❌ Build échoue avec "Error installing scipy" ou "Unknown compiler(s): gfortran"
+
+**Cause** : scipy/numpy tentent de compiler depuis les sources au lieu d'utiliser les wheels précompilés.
+
+**Solution** : Les versions dans `requirements.txt` sont maintenant fixées pour utiliser des wheels. Si le problème persiste :
+
+1. Vérifiez que `build.sh` est bien exécuté
+2. Les versions de numpy (1.24.3) et scipy (1.10.1) ont des wheels pour Python 3.12
+3. Render utilise bien `bash build.sh` comme Build Command
+
+### ❌ Build échoue avec "Error installing librosa"
+
+**Cause** : Dépendances manquantes (ffmpeg, libsndfile).
+
+**Solution** : Le script `build.sh` installe automatiquement :
+- `ffmpeg` (pour audioread)
+- `libsndfile1` (pour soundfile)
 
 ### "Application Error" au lancement
 1. Vérifiez les logs dans Render Dashboard
