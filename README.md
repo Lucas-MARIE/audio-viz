@@ -1,14 +1,67 @@
-# Analify - Visualiseur Audio Intelligent
+# 🎵 Analify - Visualiseur Audio Intelligent
 
-Application de visualisation audio avec analyse musicale automatique.
+<div align="center">
 
-## 🎵 Fonctionnalités
+![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![Flask](https://img.shields.io/badge/Flask-3.0.0-green.svg)
+![Librosa](https://img.shields.io/badge/Librosa-0.10.1-orange.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-- **Visualisation audio en temps réel** : Deux visualiseurs (Butterchurn et Shaders WebGL)
-- **Analyse musicale intelligente** : Détection automatique des sections (intro, verse, chorus, drop, etc.)
-- **Changements automatiques de shaders** : Adaptation visuelle selon la structure du morceau
-- **20+ shaders audio-réactifs** : Effets visuels variés avec dual-layer rendering
-- **Contrôle complet** : Drag & drop, click-to-seek, raccourcis clavier
+*Un visualiseur audio avancé qui analyse et synchronise automatiquement les effets visuels avec la structure musicale*
+
+[Fonctionnalités](#-fonctionnalités) • [Installation](#-installation) • [Utilisation](#-utilisation) • [Architecture](#-architecture) • [API](#-api)
+
+</div>
+
+---
+
+## 📋 Table des matières
+
+- [À propos](#-à-propos)
+- [Fonctionnalités](#-fonctionnalités)
+- [Technologies](#-technologies)
+- [Installation](#-installation)
+- [Utilisation](#-utilisation)
+- [Architecture](#-architecture)
+- [API Documentation](#-api-documentation)
+- [Algorithmes](#-algorithmes)
+
+---
+
+## 🎯 À propos
+
+**Analify** est un visualiseur audio intelligent développé pour la Nuit de l'Info 2026. Contrairement aux visualiseurs traditionnels qui réagissent simplement à l'amplitude du son, Analify **analyse en profondeur la structure musicale** d'un morceau pour adapter intelligemment les effets visuels selon les différentes sections (intro, couplet, refrain, drop, outro).
+
+### Pourquoi Analify ?
+
+- 🧠 **Intelligence musicale** : Détection automatique de la structure (intro, verse, chorus, drop, outro)
+- 🎨 **Visualisations adaptatives** : Chaque section a son propre style visuel
+- 🎵 **Analyse audio avancée** : Tempo, beats, spectral features, MFCC, chroma
+- 🎚️ **Navigation intuitive** : Barre de fréquences interactive servant de curseur pour naviguer dans le morceau
+- ⚡ **Performance optimisée** : Mode rapide pour l'analyse en temps réel
+
+---
+
+## ✨ Fonctionnalités
+
+### Analyse Musicale Automatique
+- ✅ **Détection de tempo et beats** précise avec librosa
+- ✅ **Segmentation automatique** en sections musicales
+- ✅ **Classification intelligente** des sections (intro, verse, chorus, drop, bridge, outro)
+- ✅ **Détection de drops** pour les morceaux électroniques
+- ✅ **Extraction de features** : RMS, spectral centroid, MFCC, chroma, zero-crossing rate
+
+### Visualisation
+- 🎨 **2 modes de visualisation** distincts (Butterchurn et Shaders WebGL)
+- 📊 **Barre de fréquences interactive** : Cliquez sur le spectre pour naviguer dans le morceau
+- 🌈 **Effets visuels adaptatifs** synchronisés avec la structure musicale
+- 📈 **Timeline interactive** montrant les sections détectées
+- 🎮 **Contrôles utilisateur** : mode automatique ou manuel, drag & drop
+
+### Navigation Innovante
+- 🎚️ **Spectre audio cliquable** : La visualisation des fréquences sert de curseur de navigation
+- ⏱️ **Sections visuelles** : Affichage coloré des différentes parties du morceau
+- 🔄 **Changements automatiques** : Les effets s'adaptent automatiquement aux sections
 
 ## 🚀 Installation
 
@@ -95,7 +148,33 @@ conda activate analify
 python main.py
 ```
 
-L'application sera accessible sur `http://localhost:5000`
+L'application sera accessible sur `http://localhost:8000`
+
+## 💻 Utilisation
+
+### Utilisation de l'interface
+
+1. **Ouvrir** votre navigateur sur http://localhost:8000
+2. **Choisir** un visualiseur (Viz1 ou Viz2)
+3. **Charger** un fichier audio (glisser-déposer ou cliquer)
+4. **Attendre** l'analyse automatique (~5-15 secondes selon la durée)
+5. **Profiter** de la synchronisation automatique !
+
+### Contrôles
+
+- **Espace** : Play/Pause
+- **Clic sur la barre de fréquences** : Navigation rapide - cliquez n'importe où sur le spectre audio pour vous déplacer instantanément dans le morceau
+- **Mode Auto** : Changement automatique des visuels selon les sections
+- **Timeline** : Affichage visuel des différentes sections du morceau
+- **N / P** : Changer de shader (suivant / précédent)
+
+### Navigation par spectre audio
+
+La **barre de fréquences** affichée à l'écran ne sert pas uniquement à la visualisation - elle est entièrement **cliquable** et agit comme un **curseur de navigation** :
+- 🎯 Cliquez sur la partie gauche du spectre pour revenir en arrière
+- 🎯 Cliquez sur la partie droite pour avancer
+- 🎯 La position correspond proportionnellement au temps dans le morceau
+- 🎨 Les sections sont colorées différemment pour un repérage visuel facile
 
 ## 📁 Structure du Projet
 
@@ -113,9 +192,9 @@ Analify/
 │   │   ├── css/styles.css
 │   │   └── js/
 │   │       ├── audio.js            # Gestion Web Audio API
-│   │       ├── visualization.js     # Canvas 2D
+│   │       ├── visualization.js     # Rendu Canvas et navigation par spectre
 │   │       ├── shader_background.js # WebGL shaders
-│   │       ├── main_viz2.js        # App principale
+│   │       ├── main.js / main_viz2.js # Applications principales
 │   │       └── ui.js               # Interface utilisateur
 │   └── templates/
 │       ├── home.html               # Page d'accueil
@@ -126,50 +205,27 @@ Analify/
 └── requirements.txt                # Dépendances Python
 ```
 
-## 🎹 Utilisation
-
-### Chargement d'un fichier audio
-
-1. Glisser-déposer un fichier audio (MP3, WAV, FLAC, etc.) ou cliquer pour parcourir
-2. L'analyse musicale démarre automatiquement en arrière-plan
-3. Les shaders changeront automatiquement selon la structure détectée
-
-### Raccourcis clavier
-
-- **Espace** : Lecture/Pause
-- **N** : Shader suivant (aléatoire)
-- **P** : Shader précédent (aléatoire)
-- **B** : Afficher/Masquer le fond
-
-### Analyse musicale
-
-L'analyse détecte automatiquement :
-- **Tempo** (BPM)
-- **Sections** : intro, verse, chorus, drop, bridge, outro, etc.
-- **Caractéristiques** : énergie, brillance, variations
-- **Drops** (pour musique électronique)
-
-Les shaders s'adaptent en temps réel selon :
-- Le type de section
-- L'énergie du morceau
-- La brillance spectrale
-- Les transitions importantes
+---
 
 ## 🔧 Technologies
 
 ### Backend
-- **Flask** : Framework web Python
-- **librosa** : Analyse audio et extraction de features
-- **scikit-learn** : Clustering et classification
-- **scipy** : Traitement du signal
+- **Flask 3.0.0** : Framework web Python
+- **librosa 0.10.1** : Analyse audio et extraction de features
+- **scikit-learn 1.3.2** : Clustering et classification des sections
+- **scipy 1.11.4** : Traitement du signal
+- **numpy 1.26.2** : Calculs numériques
 
 ### Frontend
 - **Web Audio API** : Analyse fréquentielle en temps réel
+- **HTML5 Canvas** : Rendu du spectre et navigation interactive
 - **WebGL/GLSL** : Rendu des shaders
-- **Canvas 2D** : Visualisation du spectre
 - **ES6 Modules** : Architecture modulaire
+- **Butterchurn** : Visualisations Milkdrop pour Viz1
 
-## 📊 API
+---
+
+## 📊 API Documentation
 
 ### POST /api/analyze
 
@@ -235,64 +291,6 @@ fetch('/api/analyze', {
 - Ouvrir la console développeur (F12) pour voir les erreurs
 - Tester avec un autre navigateur (Chrome/Firefox recommandés)
 
-## 🌐 Déploiement en ligne
-
-### Option 1 : Render.com (Gratuit & Recommandé)
-
-1. **Créer un compte sur [Render.com](https://render.com)**
-
-2. **Connecter votre dépôt GitHub**
-   - Cliquez sur "New +" → "Web Service"
-   - Connectez votre compte GitHub
-   - Sélectionnez le dépôt `Analify`
-
-3. **Configuration**
-   - **Name** : `analify` (ou le nom de votre choix)
-   - **Environment** : `Python 3`
-   - **Build Command** : `pip install -r requirements.txt`
-   - **Start Command** : `gunicorn main:app --bind 0.0.0.0:$PORT --timeout 120`
-   - **Plan** : `Free`
-
-4. **Variables d'environnement** (optionnel)
-   - `FLASK_ENV` = `production`
-
-5. **Déployer**
-   - Cliquez sur "Create Web Service"
-   - Attendez la fin du build (5-10 minutes)
-   - Votre app sera accessible sur `https://analify-xxxx.onrender.com`
-
-**⚠️ Limitations du plan gratuit** :
-- L'app se met en veille après 15 min d'inactivité
-- Premier chargement lent (30-60s pour réveiller)
-- 750h/mois gratuites
-
-### Option 2 : Railway.app
-
-1. Visitez [railway.app](https://railway.app)
-2. "Start a New Project" → "Deploy from GitHub"
-3. Sélectionnez votre dépôt
-4. Railway détecte automatiquement Python
-5. L'app sera déployée en quelques minutes
-
-### Option 3 : Heroku (Payant depuis 2022)
-
-Si vous avez un compte Heroku :
-```bash
-heroku login
-heroku create analify-app
-git push heroku main
-heroku open
-```
-
-### ❌ Pourquoi pas GitHub Pages ?
-
-GitHub Pages ne supporte **que des sites statiques** (HTML/CSS/JS). Votre application nécessite :
-- Un serveur Python (Flask)
-- L'exécution de code backend (librosa, sklearn)
-- Le traitement de fichiers uploadés
-
-→ Impossible avec GitHub Pages
-
 ## 📝 Licence
 
 MIT License - Voir LICENSE pour plus de détails
@@ -306,4 +304,4 @@ MIT License - Voir LICENSE pour plus de détails
 
 - [librosa](https://librosa.org/) pour l'analyse audio
 - [ISF](https://isf.video/) pour l'inspiration des shaders
-- Communauté VJ pour les techniques de visualisation
+- Communauté VJ pour les techniques de [visualisation](https://ravinkumar.com/GenAiGuidebook/audio/audio_feature_extraction.html)
