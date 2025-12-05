@@ -6,55 +6,67 @@
   <title>{{ metadata.title }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <style>
+    html, body {
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
     .home-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       min-height: 100vh;
-      padding: 40px 20px;
+      padding: clamp(20px, 5vh, 40px) clamp(10px, 3vw, 20px);
       background: linear-gradient(180deg, rgba(7,6,10,0.95), rgba(0,0,0,0.95) 60%);
+      overflow-y: auto;
     }
     
     .home-title {
-      font-size: clamp(32px, 8vw, 48px);
+      font-size: clamp(24px, 6vw, 48px);
       font-weight: 700;
-      margin-bottom: 20px;
+      margin-bottom: clamp(10px, 2vh, 20px);
       text-align: center;
       background: linear-gradient(90deg, #7c3aed, #ffd700);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      flex-shrink: 0;
     }
     
     .home-subtitle {
-      font-size: clamp(14px, 3vw, 18px);
+      font-size: clamp(12px, 2.5vw, 18px);
       opacity: 0.8;
-      margin-bottom: 40px;
+      margin-bottom: clamp(15px, 3vh, 40px);
       text-align: center;
       padding: 0 10px;
+      flex-shrink: 0;
     }
     
     .viz-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: clamp(12px, 2vw, 20px);
       max-width: 1200px;
       width: 100%;
-      padding: 0 10px;
+      padding: 0 10px clamp(20px, 5vh, 40px) 10px;
+      flex-grow: 1;
     }
     
     .viz-card {
       background: rgba(15,17,22,0.6);
       border: 2px solid rgba(124,58,237,0.3);
-      border-radius: 20px;
-      padding: 30px 20px;
+      border-radius: clamp(12px, 3vw, 20px);
+      padding: clamp(15px, 3vw, 30px) clamp(12px, 2.5vw, 20px);
       text-align: center;
       transition: all 0.3s ease;
       cursor: pointer;
       text-decoration: none;
       color: inherit;
-      display: block;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: clamp(200px, 30vh, 280px);
     }
     
     .viz-card:hover {
@@ -64,58 +76,120 @@
     }
     
     .viz-icon {
-      font-size: clamp(48px, 10vw, 64px);
-      margin-bottom: 15px;
+      font-size: clamp(36px, 8vw, 64px);
+      margin-bottom: clamp(8px, 2vh, 15px);
     }
     
     .viz-name {
-      font-size: clamp(18px, 4vw, 24px);
+      font-size: clamp(16px, 3.5vw, 24px);
       font-weight: 600;
-      margin-bottom: 12px;
+      margin-bottom: clamp(8px, 1.5vh, 12px);
     }
     
     .viz-description {
-      font-size: clamp(12px, 2.5vw, 14px);
+      font-size: clamp(11px, 2.2vw, 14px);
       opacity: 0.7;
-      line-height: 1.6;
+      line-height: 1.5;
+      margin-bottom: clamp(8px, 1.5vh, 12px);
     }
     
     .viz-tech {
-      margin-top: 15px;
-      padding-top: 15px;
+      margin-top: auto;
+      padding-top: clamp(8px, 1.5vh, 15px);
       border-top: 1px solid rgba(255,255,255,0.1);
-      font-size: clamp(10px, 2vw, 12px);
+      font-size: clamp(9px, 1.8vw, 12px);
       opacity: 0.6;
     }
 
     /* Responsive mobile */
     @media (max-width: 768px) {
       .home-container {
-        padding: 30px 15px;
+        padding: 15px 10px;
+        justify-content: flex-start;
+      }
+      
+      .home-title {
+        margin-bottom: 8px;
       }
       
       .home-subtitle {
-        margin-bottom: 30px;
+        margin-bottom: 15px;
       }
       
       .viz-cards {
-        gap: 15px;
+        gap: 12px;
         grid-template-columns: 1fr;
+        padding-bottom: 20px;
       }
       
       .viz-card {
-        padding: 25px 20px;
+        padding: 18px 15px;
+        min-height: 180px;
+      }
+
+      .viz-description {
+        line-height: 1.4;
       }
     }
 
     /* Très petits écrans */
     @media (max-width: 480px) {
       .home-container {
-        padding: 20px 10px;
+        padding: 12px 8px;
+      }
+      
+      .viz-cards {
+        gap: 10px;
+        padding: 0 5px 15px 5px;
       }
       
       .viz-card {
-        padding: 20px 15px;
+        padding: 15px 12px;
+        min-height: 160px;
+        border-radius: 12px;
+      }
+
+      .viz-icon {
+        margin-bottom: 6px;
+      }
+
+      .viz-name {
+        margin-bottom: 6px;
+      }
+
+      .viz-description {
+        margin-bottom: 6px;
+      }
+    }
+
+    /* Petits écrans en hauteur (téléphones compacts) */
+    @media (max-height: 700px) {
+      .home-container {
+        padding: 10px 10px;
+      }
+
+      .home-title {
+        margin-bottom: 6px;
+      }
+
+      .home-subtitle {
+        margin-bottom: 10px;
+      }
+
+      .viz-card {
+        min-height: 150px;
+      }
+    }
+
+    /* Très petite hauteur */
+    @media (max-height: 600px) {
+      .viz-card {
+        min-height: 130px;
+        padding: 12px 10px;
+      }
+
+      .viz-icon {
+        font-size: 32px;
       }
     }
   </style>
