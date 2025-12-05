@@ -17,7 +17,7 @@
     }
     
     .home-title {
-      font-size: 48px;
+      font-size: clamp(32px, 8vw, 48px);
       font-weight: 700;
       margin-bottom: 20px;
       text-align: center;
@@ -28,24 +28,27 @@
     }
     
     .home-subtitle {
-      font-size: 18px;
+      font-size: clamp(14px, 3vw, 18px);
       opacity: 0.8;
-      margin-bottom: 60px;
+      margin-bottom: 40px;
       text-align: center;
+      padding: 0 10px;
     }
     
     .viz-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 400px));
-      gap: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
       max-width: 1200px;
+      width: 100%;
+      padding: 0 10px;
     }
     
     .viz-card {
       background: rgba(15,17,22,0.6);
       border: 2px solid rgba(124,58,237,0.3);
       border-radius: 20px;
-      padding: 40px;
+      padding: 30px 20px;
       text-align: center;
       transition: all 0.3s ease;
       cursor: pointer;
@@ -61,28 +64,59 @@
     }
     
     .viz-icon {
-      font-size: 64px;
-      margin-bottom: 20px;
-    }
-    
-    .viz-name {
-      font-size: 24px;
-      font-weight: 600;
+      font-size: clamp(48px, 10vw, 64px);
       margin-bottom: 15px;
     }
     
+    .viz-name {
+      font-size: clamp(18px, 4vw, 24px);
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    
     .viz-description {
-      font-size: 14px;
+      font-size: clamp(12px, 2.5vw, 14px);
       opacity: 0.7;
       line-height: 1.6;
     }
     
     .viz-tech {
-      margin-top: 20px;
-      padding-top: 20px;
+      margin-top: 15px;
+      padding-top: 15px;
       border-top: 1px solid rgba(255,255,255,0.1);
-      font-size: 12px;
+      font-size: clamp(10px, 2vw, 12px);
       opacity: 0.6;
+    }
+
+    /* Responsive mobile */
+    @media (max-width: 768px) {
+      .home-container {
+        padding: 30px 15px;
+      }
+      
+      .home-subtitle {
+        margin-bottom: 30px;
+      }
+      
+      .viz-cards {
+        gap: 15px;
+        grid-template-columns: 1fr;
+      }
+      
+      .viz-card {
+        padding: 25px 20px;
+      }
+    }
+
+    /* Très petits écrans */
+    @media (max-width: 480px) {
+      .home-container {
+        padding: 20px 10px;
+      }
+      
+      .viz-card {
+        padding: 20px 15px;
+      }
     }
   </style>
 </head>
