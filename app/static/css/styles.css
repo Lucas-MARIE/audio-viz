@@ -5,25 +5,182 @@
   --glass: rgba(255,255,255,0.03);
 }
 
+html{
+  background: #1a1a2e;
+}
+
 html,body{
   height:100%;
   margin:0;
-  background:linear-gradient(180deg,var(--bg), #000 60%);
+  background:transparent;
   color:#eee;
   font-family:Inter, system-ui, Arial;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Overlay moins sombre pour un fond plus lumineux */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(7,6,10,0.3), rgba(0,0,0,0.4) 60%);
+  z-index: -1;
+  pointer-events: none;
+  transition: background 0.3s ease;
+}
+
+/* Fond noir quand le visualiseur est masqué */
+body.bg-hidden::before {
+  background: #000000;
+}
+
+/* ========== ÉCRAN D'UPLOAD ========== */
+#uploadScreen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  padding: 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  background: linear-gradient(180deg, rgba(7,6,10,0.95), rgba(0,0,0,0.95) 60%);
+}
+
+#uploadScreen.hidden {
+  display: none;
+}
+
+#uploadScreen h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+#dropZone {
+  width: 100%;
+  max-width: 500px;
+  height: 300px;
+  border: 3px dashed rgba(124,58,237,0.5);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: rgba(15,17,22,0.4);
+  position: relative;
+  z-index: 1001;
+}
+
+#dropZone:hover, #dropZone.dragover {
+  border-color: rgba(124,58,237,1);
+  background: rgba(124,58,237,0.1);
+  transform: scale(1.02);
+}
+
+#dropZone .icon {
+  font-size: 64px;
+}
+
+#dropZone .text {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+}
+
+#dropZone .subtext {
+  font-size: 14px;
+  opacity: 0.7;
+  text-align: center;
+}
+
+.upload-btn {
+  margin-top: 20px;
+  background: linear-gradient(90deg,var(--accent),#4c1d95);
+  padding: 15px 40px;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  border: none;
+  transition: transform 0.2s;
+  position: relative;
+  z-index: 1001;
+}
+
+.upload-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Contrôles flottants */
+.floating-controls {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 500;
+}
+
+.control-btn {
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 12px 20px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: rgba(0,0,0,0.8);
+  transform: scale(1.05);
+}
+
+/* Timer flottant */
+.floating-timer {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(10px);
+  padding: 15px 30px;
+  border-radius: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  z-index: 500;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .wrap{
-  max-width:1100px;
-  margin:18px auto;
-  padding:18px;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 header{
-  display:flex;
-  gap:12px;
-  align-items:center;
-  justify-content:space-between
+  display: none; /* Caché par défaut, remplacé par les contrôles flottants */
 }
 
 h1{
@@ -42,23 +199,32 @@ input[type=file]{
   background:var(--panel);
   padding:8px;
   border-radius:8px;
-  color:#ddd
+  color:#ddd;
+  display: none; /* Caché, utilisation via dropzone */
 }
 
 .canvas-container{
-  margin-top:18px;
-  background:var(--panel);
-  border-radius:12px;
-  padding:12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  flex: 1;
+  position: relative;
 }
 
-canvas{
-  width:100%;
-  height:360px;
-  display:block;
-  border-radius:8px;
-  background:transparent
+canvas#canvas{
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
 }
 
 .hint{

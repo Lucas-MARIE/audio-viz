@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ metadata.title }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    .home-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+      background: linear-gradient(180deg, rgba(7,6,10,0.95), rgba(0,0,0,0.95) 60%);
+    }
+    
+    .home-title {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+      background: linear-gradient(90deg, #7c3aed, #ffd700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .home-subtitle {
+      font-size: 18px;
+      opacity: 0.8;
+      margin-bottom: 60px;
+      text-align: center;
+    }
+    
+    .viz-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 400px));
+      gap: 30px;
+      max-width: 1200px;
+    }
+    
+    .viz-card {
+      background: rgba(15,17,22,0.6);
+      border: 2px solid rgba(124,58,237,0.3);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    
+    .viz-card:hover {
+      border-color: rgba(124,58,237,1);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(124,58,237,0.3);
+    }
+    
+    .viz-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    
+    .viz-name {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+    
+    .viz-description {
+      font-size: 14px;
+      opacity: 0.7;
+      line-height: 1.6;
+    }
+    
+    .viz-tech {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 12px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="home-container">
+    <h1 class="home-title">🎵 Analify</h1>
+    <p class="home-subtitle">Choisis ton visualiseur audio interactif</p>
+    
+    <div class="viz-cards">
+      <a href="/viz1" class="viz-card">
+        <div class="viz-icon">🌊</div>
+        <div class="viz-name">Visualiseur Butterchurn</div>
+        <div class="viz-description">
+          Visualisation audio avec effets MilkDrop classiques. 
+          Fonds animés psychédéliques et réactifs au son.
+        </div>
+        <div class="viz-tech">
+          Technologie: Butterchurn (WebGL) + Canvas 2D
+        </div>
+      </a>
+      
+      <a href="/viz2" class="viz-card">
+        <div class="viz-icon">✨</div>
+        <div class="viz-name">Visualiseur ISF Shaders</div>
+        <div class="viz-description">
+          20 shaders audio-réactifs inspirés du format ISF (Interactive Shader Format). 
+          Effets : Tunnel, Voronoi, Fractales, Plasma, Spirale, Mandala, Feu, Glitch, Matrix et plus !
+        </div>
+        <div class="viz-tech">
+          Technologie: 20 WebGL GLSL Shaders (ISF-style) + Audio Analysis
+        </div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

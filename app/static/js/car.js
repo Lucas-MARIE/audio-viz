@@ -10,7 +10,7 @@ export class Car {
     this.yVel = 0;
     this.visualScale = 1.0;
     this.lastPeakTime = 0;
-    this.jumpSensitivity = 0.5;
+    this.jumpSensitivity = 1.0;
   }
 
   loadImage(file) {

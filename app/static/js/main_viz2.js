@@ -1,10 +1,9 @@
-/* ========== Application principale ========== */
+/* ========== Application principale - Visualiseur 2 avec Shaders ========== */
 
 import { AudioManager } from './audio.js';
 import { Visualizer } from './visualization.js';
-import { Car } from './car.js';
 import { UIManager } from './ui.js';
-import { ButterchurnBackground } from './visualization_background.js';
+import { ShaderBackground } from './shader_background.js';
 
 class AudioVisualizerApp {
   constructor() {
@@ -13,12 +12,14 @@ class AudioVisualizerApp {
     // Initialize modules
     this.audioManager = new AudioManager();
     this.visualizer = new Visualizer(this.canvas);
-    this.car = new Car(this.canvas);
-    this.butterchurnBg = new ButterchurnBackground(this.audioManager);
-    this.uiManager = new UIManager(this.audioManager, this.visualizer, this.car, this.butterchurnBg);
+    this.shaderBg = new ShaderBackground(this.audioManager);
+    this.uiManager = new UIManager(this.audioManager, this.visualizer, null, this.shaderBg);
     
-    // Don't initialize Butterchurn yet - wait for audio to be loaded
-    this.butterchurnInitialized = false;
+    // Adapter les boutons pour le shader background
+    this.setupShaderControls();
+    
+    // Don't initialize shader yet - wait for audio to be loaded
+    this.shaderInitialized = false;
     
     // Start idle animation
     this.startIdleLoop();
@@ -27,25 +28,42 @@ class AudioVisualizerApp {
     this.setupKeyboardControls();
   }
 
-  async ensureButterchurnInitialized() {
-    if (!this.butterchurnInitialized) {
-      await this.butterchurnBg.initialize('bgCanvas');
-      this.butterchurnInitialized = true;
+  setupShaderControls() {
+    // Remplacer les handlers Butterchurn par des handlers Shader
+    const nextShaderBtn = document.getElementById('nextShader');
+    const toggleBgBtn = document.getElementById('toggleBg');
+
+    if (nextShaderBtn) {
+      nextShaderBtn.addEventListener('click', async () => {
+        await this.ensureShaderInitialized();
+        this.shaderBg.nextShader();
+      });
+    }
+
+    if (toggleBgBtn) {
+      toggleBgBtn.addEventListener('click', async () => {
+        await this.ensureShaderInitialized();
+        this.shaderBg.toggle();
+      });
+    }
+  }
+
+  async ensureShaderInitialized() {
+    if (!this.shaderInitialized) {
+      await this.shaderBg.initialize('bgCanvas');
+      this.shaderInitialized = true;
     }
   }
 
   setupKeyboardControls() {
     document.addEventListener('keydown', async (e) => {
       if (e.code === 'Space') {
-        // Toujours empêcher le comportement par défaut de Space
         e.preventDefault();
         
-        // Enlever le focus de tout bouton actif pour éviter les clics accidentels
         if (document.activeElement && document.activeElement.tagName === 'BUTTON') {
           document.activeElement.blur();
         }
         
-        // Toggle play/pause avec Espace
         if (!this.audioManager.audioEl.src) {
           return;
         }
@@ -55,14 +73,14 @@ class AudioVisualizerApp {
           this.uiManager.playAudio();
         }
       } else if (e.code === 'KeyN') {
-        await this.ensureButterchurnInitialized();
-        this.butterchurnBg.nextPreset();
+        await this.ensureShaderInitialized();
+        this.shaderBg.nextShader();
       } else if (e.code === 'KeyP') {
-        await this.ensureButterchurnInitialized();
-        this.butterchurnBg.previousPreset();
+        await this.ensureShaderInitialized();
+        this.shaderBg.previousShader();
       } else if (e.code === 'KeyB') {
-        await this.ensureButterchurnInitialized();
-        this.butterchurnBg.toggle();
+        await this.ensureShaderInitialized();
+        this.shaderBg.toggle();
       }
     });
   }
@@ -100,26 +118,6 @@ class AudioVisualizerApp {
       this.audioManager.getDuration()
     );
 
-    // Update and draw car (optionnel - commenté pour le nouveau design)
-    /*
-    const amplitude = this.visualizer.getAmplitudeAt(progress);
-    const groundY = this.visualizer.getGroundY(amplitude);
-    
-    this.car.update(
-      progress, 
-      amplitude, 
-      groundY, 
-      this.visualizer.W, 
-      this.visualizer.H
-    );
-    
-    this.car.draw(
-      groundY, 
-      this.visualizer.W, 
-      this.visualizer.H
-    );
-    */
-
     // Continue animation
     requestAnimationFrame(() => this.draw());
   }
@@ -130,18 +128,18 @@ class AudioVisualizerApp {
     this.audioManager.playAudio = async () => {
       const result = await originalPlay();
       if (result) {
-        await this.ensureButterchurnInitialized();
-        this.butterchurnBg.start();
+        await this.ensureShaderInitialized();
+        this.shaderBg.start();
         requestAnimationFrame(() => this.draw());
       }
       return result;
     };
 
-    // Override pause method to stop butterchurn
+    // Override pause method to stop shader
     const originalPause = this.audioManager.pauseAudio.bind(this.audioManager);
     this.audioManager.pauseAudio = () => {
       originalPause();
-      this.butterchurnBg.stop();
+      this.shaderBg.stop();
     };
   }
 }

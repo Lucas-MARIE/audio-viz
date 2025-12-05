@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Visualiseur audio — Spectre centré interactif</title>
+<style>
+  :root{
+    --bg:#07060a;
+    --accent: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  html,body{
+    height:100%;
+    margin:0;
+    background:linear-gradient(180deg,var(--bg), #000 60%);
+    color:#eee;
+    font-family:Inter, system-ui, Arial;
+    overflow:hidden;
+  }
+  
+  /* ========== ÉCRAN D'UPLOAD ========== */
+  #uploadScreen {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    height:100vh;
+    width:100vw;
+    padding:20px;
+  }
+  
+  #uploadScreen h1 {
+    font-size:32px;
+    font-weight:700;
+    margin-bottom:40px;
+    text-align:center;
+  }
+  
+  #dropZone {
+    width:100%;
+    max-width:500px;
+    height:300px;
+    border:3px dashed rgba(124,58,237,0.5);
+    border-radius:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:20px;
+    cursor:pointer;
+    transition:all 0.3s ease;
+    background:rgba(15,17,22,0.4);
+  }
+  
+  #dropZone:hover, #dropZone.dragover {
+    border-color:rgba(124,58,237,1);
+    background:rgba(124,58,237,0.1);
+    transform:scale(1.02);
+  }
+  
+  #dropZone .icon {
+    font-size:64px;
+  }
+  
+  #dropZone .text {
+    font-size:18px;
+    font-weight:600;
+    text-align:center;
+  }
+  
+  #dropZone .subtext {
+    font-size:14px;
+    opacity:0.7;
+    text-align:center;
+  }
+  
+  .upload-btn {
+    margin-top:20px;
+    background:linear-gradient(90deg,var(--accent),#4c1d95);
+    padding:15px 40px;
+    border-radius:12px;
+    color:white;
+    cursor:pointer;
+    font-weight:700;
+    font-size:16px;
+    border:none;
+    transition:transform 0.2s;
+  }
+  
+  .upload-btn:hover {
+    transform:scale(1.05);
+  }
+  
+  /* ========== ÉCRAN VISUALISEUR ========== */
+  #visualizerScreen {
+    display:none;
+    width:100vw;
+    height:100vh;
+    position:relative;
+  }
+  
+  #visualizerScreen.active {
+    display:block;
+  }
+  
+  canvas {
+    width:100%;
+    height:100%;
+    display:block;
+    cursor:pointer;
+  }
+  
+  /* Contrôles flottants */
+  .floating-controls {
+    position:absolute;
+    top:20px;
+    left:20px;
+    display:flex;
+    gap:10px;
+    z-index:10;
+  }
+  
+  .control-btn {
+    background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.1);
+    padding:12px 20px;
+    border-radius:10px;
+    color:white;
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+    transition:all 0.2s;
+  }
+  
+  .control-btn:hover {
+    background:rgba(0,0,0,0.8);
+    transform:scale(1.05);
+  }
+  
+  /* Timer flottant */
+  .floating-timer {
+    position:absolute;
+    bottom:30px;
+    left:50%;
+    transform:translateX(-50%);
+    background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(10px);
+    padding:15px 30px;
+    border-radius:15px;
+    font-size:18px;
+    font-weight:600;
+    z-index:10;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  
+  @media (max-width:640px){
+    #uploadScreen h1 { font-size:24px; }
+    #dropZone { height:250px; }
+    .floating-controls { 
+      top:10px; 
+      left:10px; 
+      flex-direction:column;
+      gap:5px;
+    }
+    .control-btn { padding:10px 15px; font-size:12px; }
+    .floating-timer { font-size:14px; padding:10px 20px; bottom:20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== ÉCRAN D'UPLOAD ========== -->
+<div id="uploadScreen">
+  <h1>🎵 Visualiseur Audio Interactif</h1>
+  <div id="dropZone">
+    <div class="icon">🎶</div>
+    <div class="text">Glisse ton fichier audio ici</div>
+    <div class="subtext">ou clique pour choisir un fichier</div>
+  </div>
+  <button class="upload-btn" onclick="document.getElementById('audioFile').click()">
+    Choisir un fichier
+  </button>
+  <input id="audioFile" type="file" accept="audio/*" style="display:none">
+</div>
+
+<!-- ========== ÉCRAN VISUALISEUR ========== -->
+<div id="visualizerScreen">
+  <canvas id="canvas"></canvas>
+  
+  <div class="floating-controls">
+    <button id="playPause" class="control-btn">▶ Play</button>
+    <button id="backBtn" class="control-btn">← Changer audio</button>
+  </div>
+  
+  <div class="floating-timer" id="timer">0:00 / 0:00</div>
+</div>
+
+<audio id="audioEl" style="display:none"></audio>
+
+<script>
+/* ========== Variables globales ========== */
+const uploadScreen = document.getElementById('uploadScreen');
+const visualizerScreen = document.getElementById('visualizerScreen');
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('audioFile');
+const playPauseBtn = document.getElementById('playPause');
+const backBtn = document.getElementById('backBtn');
+const timerEl = document.getElementById('timer');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', {alpha:true});
+const audioEl = document.getElementById('audioEl');
+
+let W, H;
+function resize() {
+  const ratio = devicePixelRatio || 1;
+  canvas.width = Math.floor(window.innerWidth * ratio);
+  canvas.height = Math.floor(window.innerHeight * ratio);
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  W = window.innerWidth;
+  H = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ========== Audio context ========== */
+let audioCtx = null;
+let sourceNode = null;
+let analyser = null;
+let gainNode = null;
+let dataArray = null;
+let bufferLength = 0;
+
+let isPlaying = false;
+let symmetricData = [];
+let globalGain = 2.0;
+
+function ensureAudioContext(){
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = globalGain;
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8; // Augmenté pour plus de fluidité
+    gainNode.connect(analyser);
+    analyser.connect(audioCtx.destination);
+  }
+}
+
+/* ========== Gestion fichier ========== */
+function loadAudioFile(file) {
+  if (!file || !file.type.startsWith('audio/')) {
+    alert('Merci de choisir un fichier audio valide.');
+    return;
+  }
+  
+  stopAudio();
+  ensureAudioContext();
+
+  const url = URL.createObjectURL(file);
+  audioEl.src = url;
+  audioEl.load();
+  
+  audioEl.addEventListener('loadeddata', () => {
+    if (sourceNode) sourceNode.disconnect();
+    sourceNode = audioCtx.createMediaElementSource(audioEl);
+    sourceNode.connect(gainNode);
+
+    bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+
+    // Passer à l'écran visualiseur
+    uploadScreen.style.display = 'none';
+    visualizerScreen.classList.add('active');
+    
+    playAudio();
+  }, {once: true});
+}
+
+// Click sur dropZone
+dropZone.addEventListener('click', () => {
+  fileInput.click();
+});
+
+// File input
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) loadAudioFile(file);
+});
+
+// Drag & drop
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadAudioFile(file);
+});
+
+/* ========== Contrôles ========== */
+playPauseBtn.addEventListener('click', async ()=>{
+  if (!audioEl.src) return;
+  if (!isPlaying) {
+    await playAudio();
+  } else {
+    pauseAudio();
+  }
+});
+
+backBtn.addEventListener('click', () => {
+  stopAudio();
+  visualizerScreen.classList.remove('active');
+  uploadScreen.style.display = 'flex';
+  fileInput.value = '';
+});
+
+async function playAudio(){
+  if (!audioCtx) ensureAudioContext();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  await audioEl.play().catch(()=>{});
+  isPlaying = true;
+  playPauseBtn.textContent = '⏸ Pause';
+  requestAnimationFrame(draw);
+}
+
+function pauseAudio(){
+  audioEl.pause();
+  isPlaying = false;
+  playPauseBtn.textContent = '▶ Play';
+}
+
+function stopAudio(){
+  pauseAudio();
+  if (sourceNode) {
+    try { sourceNode.disconnect(); } catch(e){}
+    sourceNode = null;
+  }
+  if (audioEl) {
+    audioEl.pause();
+    audioEl.currentTime = 0;
+    audioEl.src = '';
+  }
+}
+
+/* ========== Click pour seek ========== */
+canvas.addEventListener('click', (e)=>{
+  if (!audioEl.src || !audioEl.duration) return;
+  const clickX = e.clientX;
+  const progress = clickX / W;
+  audioEl.currentTime = progress * audioEl.duration;
+  
+  if (!isPlaying) {
+    drawFrame();
+  }
+});
+
+/* ========== Données symétriques ========== */
+function getSymmetricData(raw) {
+  const N = raw.length;
+  const half = Math.floor(N/2);
+  const left = new Float32Array(half);
+  
+  for (let i=0;i<half;i++) left[i] = raw[i]/255;
+  
+  // Lissage plus fort pour éviter les saccades
+  for (let i=2;i<half-2;i++) {
+    left[i] = (left[i-2]*0.05 + left[i-1]*0.15 + left[i]*0.6 + left[i+1]*0.15 + left[i+2]*0.05);
+  }
+  
+  const symmetric = new Float32Array(half*2);
+  for (let i=0;i<half;i++){
+    symmetric[i] = left[half - 1 - i];
+    symmetric[half + i] = left[i];
+  }
+  return symmetric;
+}
+
+/* ========== Dessin ========== */
+function drawFrame(){
+  if (!analyser || !dataArray) return;
+
+  analyser.getByteFrequencyData(dataArray);
+  symmetricData = getSymmetricData(dataArray);
+
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+
+  const duration = audioEl.duration || 1;
+  const currentTime = audioEl.currentTime || 0;
+  const progress = Math.max(0, Math.min(1, currentTime / duration));
+
+  // Mise à jour du timer
+  timerEl.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+
+  const len = symmetricData.length;
+  const marginTop = H * 0.1;
+  const bottom = H * 0.9;
+  const step = W / (len - 1);
+
+  const curvePoints = [];
+  for (let i=0;i<len;i++){
+    const x = i * step;
+    const amp = symmetricData[i];
+    const curve = Math.pow(amp, 0.8);
+    const y = bottom - (curve * (H*0.7)) - marginTop;
+    curvePoints.push({x, y});
+  }
+
+  // ===== PARTIE JOUÉE (colorée) =====
+  const playedX = progress * W;
+  
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, playedX, H);
+  ctx.clip();
+
+  ctx.beginPath();
+  for (let i=0;i<curvePoints.length;i++){
+    const pt = curvePoints[i];
+    if (i===0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.lineWidth = 3;
+  const strokeGrad = ctx.createLinearGradient(0,0,W,0);
+  strokeGrad.addColorStop(0, "rgba(120, 40, 240, 0.9)");
+  strokeGrad.addColorStop(0.5, "rgba(255,215,0,1)");
+  strokeGrad.addColorStop(1, "rgba(120, 40, 240, 0.9)");
+  ctx.strokeStyle = strokeGrad;
+  ctx.stroke();
+  ctx.restore();
+
+  // ===== PARTIE NON-JOUÉE (blanche) =====
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(playedX, 0, W - playedX, H);
+  ctx.clip();
+
+  ctx.beginPath();
+  for (let i=0;i<curvePoints.length;i++){
+    const pt = curvePoints[i];
+    if (i===0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.stroke();
+  ctx.restore();
+
+  // Point indicateur
+  const progressIdx = Math.floor(progress * (len-1));
+  if (progressIdx < curvePoints.length) {
+    const pt = curvePoints[progressIdx];
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 8, 0, Math.PI*2);
+    ctx.fillStyle = "rgba(255,215,0,1)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function draw(){
+  if (!isPlaying) return;
+  drawFrame();
+  requestAnimationFrame(draw);
+}
+
+function formatTime(sec){
+  if (!isFinite(sec)) return "0:00";
+  const s = Math.floor(sec%60).toString().padStart(2,'0');
+  const m = Math.floor(sec/60).toString();
+  return `${m}:${s}`;
+}
+
+</script>
+</body>
+</html>

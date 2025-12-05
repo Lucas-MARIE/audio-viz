@@ -98,6 +98,12 @@ export class AudioManager {
     return this.audioEl.duration || 1;
   }
 
+  seek(timeInSeconds) {
+    if (this.audioEl) {
+      this.audioEl.currentTime = timeInSeconds;
+    }
+  }
+
   getProgress() {
     return Math.max(0, Math.min(1, this.getCurrentTime() / this.getDuration()));
   }

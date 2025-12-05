@@ -3,31 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Visualiseur audio — Spectre centré + vidéo + voiture</title>
+  <title>{{ metadata.title }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-  
-  <!-- Butterchurn Libraries - Essai avec JSDelivr CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/butterchurn@2.6.7/lib/butterchurn.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/butterchurn-presets@2.4.7/lib/butterchurnPresets.min.js"></script>
-  
-  <!-- Test si Butterchurn est chargé -->
-  <script>
-    window.addEventListener('load', () => {
-      console.log('Page chargée - Test Butterchurn:');
-      console.log('window.butterchurn:', window.butterchurn);
-      console.log('window.butterchurnPresets:', window.butterchurnPresets);
-      if (window.butterchurn) {
-        console.log('Butterchurn disponible! Méthodes:', Object.keys(window.butterchurn));
-      } else {
-        console.error('Butterchurn NON disponible!');
-      }
-    });
-  </script>
 </head>
 <body>
   <!-- ========== ÉCRAN D'UPLOAD ========== -->
   <div id="uploadScreen">
-    <h1>🎵 Visualiseur Audio Interactif</h1>
+    <h1>🎵 Visualiseur Audio Interactif - modV</h1>
     <div id="dropZone">
       <div class="icon">🎶</div>
       <div class="text">Glisse ton fichier audio ici</div>
@@ -43,7 +25,7 @@
     <div class="floating-controls">
       <button id="playBtn" class="control-btn">▶</button>
       <button id="backBtn" class="control-btn">← Retour</button>
-      <button id="nextPreset" class="control-btn">🎨 Style</button>
+      <button id="nextShader" class="control-btn">🎨 Style</button>
       <button id="toggleBg" class="control-btn">👁️ Fond</button>
     </div>
 
@@ -55,10 +37,9 @@
     </div>
   </div>
 
-  <!-- Hidden video & audio elements used as sources -->
-  <video id="bgVideo" style="display:none" muted loop playsinline crossorigin="anonymous"></video>
+  <!-- Hidden audio element -->
   <audio id="audioEl" style="display:none" crossorigin="anonymous"></audio>
 
-  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/main_viz2.js') }}"></script>
 </body>
 </html>

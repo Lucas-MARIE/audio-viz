@@ -8,6 +8,7 @@ export class Visualizer {
     this.H = 0;
     this.symmetricData = [];
     this.bgVideo = document.getElementById('bgVideo');
+    this.currentProgress = 0;
     
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -20,6 +21,11 @@ export class Visualizer {
     this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     this.W = this.canvas.clientWidth;
     this.H = this.canvas.clientHeight;
+  }
+
+  clear() {
+    this.ctx.clearRect(0, 0, this.W, this.H);
+    this.currentProgress = 0;
   }
 
   getSymmetricData(raw) {
@@ -51,115 +57,87 @@ export class Visualizer {
     
     this.symmetricData = this.getSymmetricData(dataArray);
     const len = this.symmetricData.length;
-    const marginTop = 24;
-    const bottom = this.H * 0.92;
+    const marginTop = this.H * 0.1;
+    const bottom = this.H * 0.9;
     const step = this.W / (len - 1);
 
     this.ctx.clearRect(0, 0, this.W, this.H);
     this.ctx.save();
 
-    // Create path for clipping
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, bottom);
-    
+    // Calculer tous les points de la courbe
+    const curvePoints = [];
     for (let i = 0; i < len; i++) {
       const x = i * step;
       const amp = this.symmetricData[i];
       const curve = Math.pow(amp, 0.8);
       const y = bottom - (curve * (this.H * 0.7)) - marginTop;
-      
-      if (i === 0) {
-        this.ctx.lineTo(x, y);
-      } else {
-        const prevX = (i - 1) * step;
-        const prevAmp = this.symmetricData[i - 1];
-        const prevCurve = Math.pow(prevAmp, 0.8);
-        const prevY = bottom - (prevCurve * (this.H * 0.7)) - marginTop;
-        const cx = (prevX + x) / 2;
-        const cy = (prevY + y) / 2;
-        this.ctx.quadraticCurveTo(prevX, prevY, cx, cy);
-      }
+      curvePoints.push({x, y});
     }
-    
-    this.ctx.lineTo(this.W, bottom);
-    this.ctx.closePath();
 
-    // Draw video background with clipping
+    // Ne plus dessiner de fond opaque - on veut voir Butterchurn
+    // Juste dessiner la courbe avec deux parties
+
+    // Partie jouée (colorée) - on utilisera le progress depuis le main
+    const progress = this.currentProgress || 0;
+    const playedX = progress * this.W;
+    
+    // ===== PARTIE JOUÉE (colorée) =====
     this.ctx.save();
-    this.ctx.clip();
-    
-    if (this.bgVideo && this.bgVideo.readyState >= 2 && !this.bgVideo.paused) {
-      const vW = this.bgVideo.videoWidth || this.W;
-      const vH = this.bgVideo.videoHeight || this.H;
-      const scale = Math.max(this.W / vW, this.H / vH);
-      const vw = vW * scale;
-      const vh = vH * scale;
-      const dx = (this.W - vw) / 2;
-      const dy = (this.H - vh) / 2;
-      this.ctx.globalAlpha = 0.95;
-      this.ctx.drawImage(this.bgVideo, dx, dy, vw, vh);
-    } else {
-      const g = this.ctx.createLinearGradient(0, 0, 0, this.H);
-      g.addColorStop(0, "rgba(124,58,237,0.18)");
-      g.addColorStop(0.5, "rgba(14,165,233,0.12)");
-      g.addColorStop(1, "rgba(15,23,42,0.08)");
-      this.ctx.fillStyle = g;
-      this.ctx.fillRect(0, 0, this.W, this.H);
-    }
-    
-    this.ctx.restore();
-
-    // Draw glow
-    this.ctx.save();
-    this.ctx.shadowBlur = 24;
-    this.ctx.shadowColor = "rgba(124,58,237,0.6)";
-    this.ctx.fillStyle = "rgba(124,58,237,0.12)";
-    this.ctx.fill();
-    this.ctx.restore();
-
-    // Draw stroke
     this.ctx.beginPath();
-    for (let i = 0; i < len; i++) {
-      const x = i * step;
-      const amp = this.symmetricData[i];
-      const curve = Math.pow(amp, 0.85);
-      const y = bottom - (curve * (this.H * 0.7)) - marginTop;
-      if (i === 0) this.ctx.moveTo(x, y);
-      else this.ctx.lineTo(x, y);
+    this.ctx.rect(0, 0, playedX, this.H);
+    this.ctx.clip();
+
+    this.ctx.beginPath();
+    for (let i = 0; i < curvePoints.length; i++) {
+      const pt = curvePoints[i];
+      if (i === 0) this.ctx.moveTo(pt.x, pt.y);
+      else this.ctx.lineTo(pt.x, pt.y);
     }
-    
-    this.ctx.lineWidth = 2.5;
+    this.ctx.lineWidth = 3;
     const strokeGrad = this.ctx.createLinearGradient(0, 0, this.W, 0);
     strokeGrad.addColorStop(0, "rgba(120, 40, 240, 0.9)");
     strokeGrad.addColorStop(0.5, "rgba(255,215,0,1)");
     strokeGrad.addColorStop(1, "rgba(120, 40, 240, 0.9)");
     this.ctx.strokeStyle = strokeGrad;
     this.ctx.stroke();
+    this.ctx.restore();
 
-    // Subtle top glow
+    // ===== PARTIE NON-JOUÉE (blanche semi-transparente) =====
+    this.ctx.save();
     this.ctx.beginPath();
-    for (let i = 0; i < len; i++) {
-      const x = i * step;
-      const amp = this.symmetricData[i];
-      const curve = Math.pow(amp, 0.6);
-      const y = bottom - (curve * (this.H * 0.7)) - marginTop;
-      if (i === 0) this.ctx.moveTo(x, y);
-      else this.ctx.lineTo(x, y);
+    this.ctx.rect(playedX, 0, this.W - playedX, this.H);
+    this.ctx.clip();
+
+    this.ctx.beginPath();
+    for (let i = 0; i < curvePoints.length; i++) {
+      const pt = curvePoints[i];
+      if (i === 0) this.ctx.moveTo(pt.x, pt.y);
+      else this.ctx.lineTo(pt.x, pt.y);
     }
-    
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    this.ctx.lineWidth = 3;
+    this.ctx.strokeStyle = "rgba(255,255,255,0.5)";
     this.ctx.stroke();
+    this.ctx.restore();
 
-    // Center marker
-    this.ctx.beginPath();
-    this.ctx.moveTo(this.W / 2, bottom + 6);
-    this.ctx.lineTo(this.W / 2, bottom + 24);
-    this.ctx.lineWidth = 1.2;
-    this.ctx.strokeStyle = "rgba(255,255,255,0.06)";
-    this.ctx.stroke();
+    // Point indicateur sur la position actuelle
+    const progressIdx = Math.floor(progress * (len - 1));
+    if (progressIdx < curvePoints.length) {
+      const pt = curvePoints[progressIdx];
+      this.ctx.beginPath();
+      this.ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+      this.ctx.fillStyle = "rgba(255,215,0,1)";
+      this.ctx.fill();
+      this.ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      this.ctx.lineWidth = 3;
+      this.ctx.stroke();
+    }
 
     this.ctx.restore();
+  }
+
+  // Méthode pour mettre à jour le progress depuis l'extérieur
+  setProgress(progress) {
+    this.currentProgress = progress;
   }
 
   drawIdleBackground() {
