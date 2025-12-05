@@ -62,9 +62,37 @@ def analyze_audio():
         audio_file.save(temp_path)
         print(f"Fichier sauvegardé: {temp_path}")
         
-        # 1. Analyser les features audio (mode rapide activé)
+        # 1. Analyser les features audio (mode TRÈS rapide pour éviter timeout Render)
         analyzer = MusicAnalyzer(fast_mode=True)
-        features = analyzer.analyze(temp_path)
+        
+        # Limiter la durée d'analyse à 20s max (Render timeout = 30s)
+        import signal
+        
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Analyse trop longue (timeout 20s)")
+        
+        # Sur Windows, signal.alarm n'existe pas, donc on skip
+        analysis_start = time.time()
+        
+        try:
+            features = analyzer.analyze(temp_path)
+            analysis_duration = time.time() - analysis_start
+            print(f"⏱️ Analyse terminée en {analysis_duration:.1f}s")
+        except Exception as e:
+            # Si l'analyse prend trop de temps, mode dégradé
+            print(f"⚠️ Analyse échouée ou trop longue, mode dégradé activé")
+            return jsonify({
+                'success': True,
+                'degraded_mode': True,
+                'message': 'Analyse simplifiée (fichier trop long)',
+                'filename': filename,
+                'duration': 0,
+                'tempo': 120,
+                'beat_times': [],
+                'sections': [],
+                'drops': [],
+                'visualization_timeline': []
+            }), 200
         
         # 2. Détecter les sections (nombre automatique basé sur la durée)
         detector = SectionDetector(n_sections=None)  # Auto-detect

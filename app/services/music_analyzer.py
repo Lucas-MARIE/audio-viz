@@ -10,10 +10,10 @@ from scipy import signal
 class MusicAnalyzer:
     """Analyse les caractéristiques audio d'un fichier musical."""
     
-    def __init__(self, sr=22050, fast_mode=True):
+    def __init__(self, sr=11025, fast_mode=True):
         """
         Args:
-            sr: Sample rate pour le chargement audio (22050 par défaut)
+            sr: Sample rate pour le chargement audio (11025 ultra-rapide pour Render)
             fast_mode: Si True, réduit la qualité pour accélérer l'analyse
         """
         self.sr = sr
