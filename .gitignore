@@ -1,0 +1,61 @@
+# .gitignore pour Analify
+
+# Fichiers temporaires
+temp/*
+!temp/.gitkeep
+
+# Environnements Python
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Fichiers de cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+
+# Fichiers de log
+*.log
+logs/
+
+# Fichiers audio de test (optionnel)
+# *.mp3
+# *.wav
+# *.flac
+
+# Variables d'environnement
+.env
+.env.local

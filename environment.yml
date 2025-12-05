@@ -1,0 +1,19 @@
+name: analify
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip>=24.0
+  # Audio processing (installées via conda pour éviter les problèmes de compilation)
+  - librosa=0.11.0
+  - numpy=1.26.4
+  - scipy=1.13.1
+  - soundfile=0.13.1
+  - audioread=3.0.1
+  - scikit-learn=1.7.2
+  - matplotlib=3.9.2
+  # Dépendances pip (Flask et compatibilité)
+  - pip:
+    - Flask==3.0.0
+    - Werkzeug==3.0.1

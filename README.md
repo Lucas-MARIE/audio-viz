@@ -19,13 +19,45 @@ git clone https://github.com/hrtxr/Analify.git
 cd Analify
 ```
 
-### 2. Installer les dépendances Python
+### 2. Installer les dépendances
+
+#### Option A : Avec Conda (Recommandé pour Windows)
+
+Cette méthode évite les problèmes de compilation de `librosa` et ses dépendances.
+
+**Installation automatique** :
+```bash
+# Windows
+install.bat
+
+# Linux/macOS
+chmod +x install.sh
+./install.sh
+```
+
+**Installation manuelle** :
+```bash
+# Créer l'environnement conda
+conda env create -f environment.yml
+
+# Activer l'environnement
+conda activate analify
+```
+
+#### Option B : Avec pip (Linux/macOS)
 
 ```bash
+# Créer un environnement virtuel (optionnel mais recommandé)
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# ou
+venv\Scripts\activate  # Windows
+
+# Installer les dépendances
 pip install -r requirements.txt
 ```
 
-**Note** : L'installation de `librosa` peut prendre quelques minutes. Si vous rencontrez des problèmes avec `audioread`, installez FFmpeg :
+**Note pour pip** : L'installation de `librosa` peut prendre quelques minutes. Si vous rencontrez des problèmes, installez FFmpeg :
 
 **Windows** :
 ```bash
@@ -44,11 +76,26 @@ sudo apt-get install ffmpeg
 
 ### 3. Lancer l'application
 
+**Avec les scripts fournis** :
 ```bash
+# Windows
+run.bat
+
+# Linux/macOS
+chmod +x run.sh
+./run.sh
+```
+
+**Manuellement** :
+```bash
+# Activer l'environnement (si conda)
+conda activate analify
+
+# Lancer le serveur
 python main.py
 ```
 
-L'application sera accessible sur `http://localhost:8000`
+L'application sera accessible sur `http://localhost:5000`
 
 ## 📁 Structure du Projet
 
