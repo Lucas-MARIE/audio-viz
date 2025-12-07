@@ -25,3 +25,11 @@ def viz2():
         }
 
     return render_template('index_viz2.html',metadata = metadata)
+
+@index_bp.route("/viz_infinite", methods=["GET"])
+def viz_infinite():
+    metadata = {
+        'title':'🎵 Visualiseur Temps Réel Infini'
+        }
+
+    return render_template('index_viz_infinite.html',metadata = metadata)

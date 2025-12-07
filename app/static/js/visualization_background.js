@@ -30,17 +30,27 @@ export class ButterchurnBackground {
 
   async initialize(canvasId = 'bgCanvas') {
     if (this.isInitialized) return;
+    
+    console.log('🔄 Tentative d\'initialisation de Butterchurn...');
 
-    // Attendre que Butterchurn soit chargé depuis le HTML
+    // Attendre que Butterchurn soit chargé depuis le HTML (jusqu'à 10 secondes)
     let attempts = 0;
-    while ((!window.butterchurn || !window.butterchurnPresets) && attempts < 50) {
+    while ((!window.butterchurn || !window.butterchurnPresets) && attempts < 100) {
+      if (attempts === 0) {
+        console.log('⏳ Attente du chargement de Butterchurn...');
+      }
       await new Promise(resolve => setTimeout(resolve, 100));
       attempts++;
     }
 
     if (!window.butterchurn || !window.butterchurnPresets) {
-      console.error('Butterchurn n\'a pas pu être chargé après 5 secondes');
-      return;
+      console.error('❌ Butterchurn n\'a pas pu être chargé après 10 secondes');
+      console.log('Debug info:');
+      console.log('  - window.butterchurn:', window.butterchurn);
+      console.log('  - window.butterchurnPresets:', window.butterchurnPresets);
+      console.log('  - Vérifiez votre connexion internet');
+      console.log('  - Le mode Shaders reste disponible');
+      throw new Error('Butterchurn unavailable');
     }
 
     this.butterchurn = window.butterchurn.default || window.butterchurn;

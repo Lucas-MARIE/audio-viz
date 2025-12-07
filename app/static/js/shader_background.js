@@ -1185,12 +1185,30 @@ export class ShaderBackground {
   }
 
   getAudioData() {
+    // Utiliser d'abord la méthode getAudioData() de l'audioManager si elle existe
+    if (this.audioManager.getAudioData) {
+      const audioData = this.audioManager.getAudioData();
+      if (audioData) {
+        return {
+          level: audioData.audioLevel || 0,
+          low: audioData.audioLow || 0,
+          mid: audioData.audioMid || 0,
+          high: audioData.audioHigh || 0
+        };
+      }
+    }
+    
+    // Fallback sur l'ancienne méthode
     if (!this.audioManager.analyser || !this.audioManager.dataArray) {
       return { level: 0, low: 0, mid: 0, high: 0 };
     }
     
-    this.audioManager.analyser.getByteFrequencyData(this.audioManager.dataArray);
     const data = this.audioManager.dataArray;
+    if (!data || data.length === 0) {
+      return { level: 0, low: 0, mid: 0, high: 0 };
+    }
+    
+    // Si c'est un getter, il retourne déjà les données fraîches
     const len = data.length;
     
     // Calculer les niveaux audio par bande de fréquence

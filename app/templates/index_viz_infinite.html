@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analify - Visualiseur Temps Réel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+    <!-- Butterchurn Libraries - Même version que viz1 (stable et fiable) -->
+    <script src="https://cdn.jsdelivr.net/npm/butterchurn@2.6.7/lib/butterchurn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/butterchurn-presets@2.4.7/lib/butterchurnPresets.min.js"></script>
+    
+    <!-- Test si Butterchurn est chargé -->
+    <script>
+      window.addEventListener('load', () => {
+        console.log('Butterchurn chargé:', typeof window.butterchurn !== 'undefined');
+        if (window.butterchurn) {
+          console.log('✅ Butterchurn disponible');
+        }
+      });
+    </script>
+    
+    <style>
+        /* Style spécifique pour le mode temps réel */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #canvasContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #bgCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #butterchurnCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            display: none; /* Caché par défaut */
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        /* Écran de sélection de la source audio */
+        #selectionScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            gap: 30px;
+        }
+
+        #selectionScreen h1 {
+            color: #fff;
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #selectionScreen p {
+            color: #aaa;
+            font-size: 18px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.6;
+            margin: 0 0 30px 0;
+        }
+
+        .selection-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .source-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .source-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .source-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .source-btn i {
+            margin-right: 10px;
+        }
+
+        /* Contrôles UI */
+        #controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 25px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .control-btn.danger {
+            background: rgba(220, 53, 69, 0.3);
+            border-color: rgba(220, 53, 69, 0.5);
+        }
+
+        .control-btn.danger:hover {
+            background: rgba(220, 53, 69, 0.5);
+            border-color: rgba(220, 53, 69, 0.7);
+        }
+
+        /* Affichage des informations */
+        #infoPanel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+            z-index: 50;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #infoPanel.collapsed {
+            min-width: auto;
+            padding: 5px;
+        }
+
+        #infoPanel.collapsed .info-content {
+            display: none;
+        }
+
+        #infoPanel .info-content {
+            min-width: 260px;
+            padding: 10px;
+        }
+
+        .toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: block;
+            width: 100%;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .status-display {
+            font-size: 16px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .status-display.success {
+            background: rgba(40, 167, 69, 0.3);
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+
+        .status-display.stopped {
+            background: rgba(220, 53, 69, 0.3);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+        }
+
+        #sectionDisplay {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        #statsDisplay {
+            font-size: 12px;
+            color: #aaa;
+            line-height: 1.8;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #statsDisplay div {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Instructions clavier */
+        #keyboardHelp {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 10px;
+            color: #aaa;
+            font-size: 12px;
+            z-index: 50;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #keyboardHelp.collapsed {
+            padding: 5px;
+        }
+
+        #keyboardHelp.collapsed .help-content {
+            display: none;
+        }
+
+        #keyboardHelp .help-content {
+            padding: 10px;
+        }
+
+        #keyboardHelp h4 {
+            margin: 0 0 10px 0;
+            color: white;
+            font-size: 14px;
+        }
+
+        #keyboardHelp div {
+            margin: 5px 0;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: white;
+            margin-right: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #selectionScreen h1 {
+                font-size: 32px;
+            }
+
+            #selectionScreen p {
+                font-size: 16px;
+                padding: 0 20px;
+            }
+
+            .source-btn {
+                font-size: 16px;
+                padding: 15px 30px;
+            }
+
+            #controls {
+                flex-wrap: wrap;
+                max-width: 90%;
+            }
+
+            #infoPanel {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: unset;
+            }
+
+            #keyboardHelp {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas pour visualisation -->
+    <div id="canvasContainer">
+        <canvas id="bgCanvas"></canvas>
+        <canvas id="butterchurnCanvas"></canvas>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <!-- Écran de sélection de la source audio -->
+    <div id="selectionScreen">
+        <h1>🎵 Visualiseur Temps Réel</h1>
+        <p>
+            Visualisez en direct l'audio de votre microphone ou de votre système 
+            (Spotify, YouTube, etc.). Choisissez votre source audio :
+        </p>
+        <div class="selection-buttons">
+            <button id="startMicBtn" class="source-btn">
+                🎤 Microphone
+            </button>
+            <button id="startDesktopBtn" class="source-btn">
+                🖥️ Audio Système
+            </button>
+        </div>
+        <p style="margin-top: 20px; font-size: 14px; color: #666;">
+            Note : Pour capturer l'audio système, votre navigateur vous demandera de sélectionner 
+            un onglet ou une fenêtre. Choisissez l'onglet où joue votre musique (Spotify, YouTube, etc.).
+        </p>
+    </div>
+
+    <!-- Panneau d'informations -->
+    <div id="infoPanel" class="collapsed">
+        <button id="toggleInfo" class="toggle-btn">📊</button>
+        <div class="info-content">
+            <div id="statusDisplay" class="status-display">
+                En attente...
+            </div>
+            <div id="sectionDisplay">
+                Section: ---
+            </div>
+            <div id="statsDisplay">
+                Statistiques : ---
+            </div>
+        </div>
+    </div>
+
+    <!-- Contrôles -->
+    <div id="controls" style="display: none;">
+        <button id="stopBtn" class="control-btn danger">⏹️ Arrêter</button>
+        <button id="nextShader" class="control-btn">🎨 Shader Suivant</button>
+        <button id="switchMode" class="control-btn">🌊 Butterchurn / ✨ Shaders</button>
+        <button id="backBtn" class="control-btn">🏠 Accueil</button>
+    </div>
+
+    <!-- Aide clavier -->
+    <div id="keyboardHelp" class="collapsed">
+        <button id="toggleHelp" class="toggle-btn">⌨️</button>
+        <div class="help-content">
+            <h4>⌨️ Raccourcis clavier</h4>
+            <div><span class="key">ESPACE</span> Arrêter</div>
+            <div><span class="key">N</span> Shader suivant</div>
+            <div><span class="key">P</span> Shader précédent</div>
+            <div><span class="key">M</span> Mode Butterchurn/Shaders</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="{{ url_for('static', filename='js/main_viz_infinite.js') }}"></script>
+
+    <script>
+        // Afficher les contrôles quand la visualisation démarre
+        const selectionScreen = document.getElementById('selectionScreen');
+        const controls = document.getElementById('controls');
+        
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'style') {
+                    if (selectionScreen.style.display === 'none') {
+                        controls.style.display = 'flex';
+                    } else {
+                        controls.style.display = 'none';
+                    }
+                }
+            });
+        });
+        
+        observer.observe(selectionScreen, { attributes: true });
+        
+        // Gestion des panneaux pliables
+        const toggleInfo = document.getElementById('toggleInfo');
+        const infoPanel = document.getElementById('infoPanel');
+        const toggleHelp = document.getElementById('toggleHelp');
+        const keyboardHelp = document.getElementById('keyboardHelp');
+        
+        if (toggleInfo) {
+            toggleInfo.addEventListener('click', () => {
+                infoPanel.classList.toggle('collapsed');
+            });
+        }
+        
+        if (toggleHelp) {
+            toggleHelp.addEventListener('click', () => {
+                keyboardHelp.classList.toggle('collapsed');
+            });
+        }
+    </script>
+</body>
+</html>
