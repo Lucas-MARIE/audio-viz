@@ -1,14 +1,15 @@
 [phases.setup]
-nixPkgs = ["python312", "python312Packages.pip", "ffmpeg", "libsndfile"]
+nixPkgs = ["python312", "python312Packages.virtualenv", "ffmpeg", "libsndfile"]
 
 [phases.install]
 cmds = [
-  "python -m pip install --upgrade pip",
-  "python -m pip install -r requirements.txt"
+  "python -m venv /opt/venv",
+  "/opt/venv/bin/pip install --upgrade pip",
+  "/opt/venv/bin/pip install -r requirements.txt"
 ]
 
 [phases.build]
-cmds = ["python -m pip install --upgrade pip && python -m pip install -r requirements.txt"]
+cmds = ["echo 'Build phase'"]
 
 [start]
-cmd = "gunicorn main:app --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --threads 4 --worker-class gthread --log-level info"
+cmd = "/opt/venv/bin/gunicorn main:app --bind 0.0.0.0:$PORT --timeout 300 --workers 2 --threads 4 --worker-class gthread --log-level info"
