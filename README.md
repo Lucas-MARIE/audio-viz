@@ -1,4 +1,4 @@
-# 🎵 Analify - Visualiseur Audio Intelligent
+# 🎵 Analify - Visualiseur audio intelligent
 
 <div align="center">
 
